@@ -170,15 +170,102 @@ class EmployeeController extends Controller
     // PUT/PATCH /employees/{id}
     public function update(Request $request, $id)
     {
+        // Step 1: Validate fields
+        $validator = Validator::make($request->all(), [
+            'fname' => 'required|string|max:255',
+            'lname' => 'required|string|max:255',
+            'email' => 'required|email',
+            'password' => 'nullable|min:6',
+            'department_id' => 'nullable|exists:departments,id',
+            'emplyeetype' => 'nullable|string',
+            'role' => 'required|string',
+            'dob' => 'nullable',
+            'salary' => 'nullable|numeric|min:0',
+            'image' => 'nullable|file|mimes:jpg,jpeg,webp,png',
+            'image_url' => 'nullable|url',
+            'image_base64' => 'nullable|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // Step 2: Find Employee
         $employee = Employee::find($id);
         if (!$employee) {
             return response()->json(['message' => 'Employee not found'], 404);
         }
 
-        $employee->update($request->all());
+        $user = $employee->user;
 
-        return response()->json(['message' => 'Employee updated', 'data' => $employee]);
+        // Step 3: Handle image
+        $imagePath = $user->image; // keep existing by default
+
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $filename = time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('images'), $filename);
+            $imagePath = 'images/' . $filename;
+        } elseif ($request->image_base64) {
+            $imageData = preg_replace('/^data:image\/\w+;base64,/', '', $request->image_base64);
+            $imageData = str_replace(' ', '+', $imageData);
+            $filename = time() . '.png';
+            file_put_contents(public_path('images/') . $filename, base64_decode($imageData));
+            $imagePath = 'images/' . $filename;
+        } elseif ($request->image_url) {
+            $fileContents = @file_get_contents($request->image_url);
+            if ($fileContents !== false) {
+                $extension = pathinfo(parse_url($request->image_url, PHP_URL_PATH), PATHINFO_EXTENSION);
+                if (!$extension) $extension = 'jpg';
+                $filename = time() . '.' . $extension;
+                file_put_contents(public_path('images/') . $filename, $fileContents);
+                $imagePath = 'images/' . $filename;
+            }
+        }
+
+        // Step 4: Update User
+        $user->update([
+            'name' => $request->fname . ' ' . $request->lname,
+            'email' => $request->email,
+            'password' => $request->password ? bcrypt($request->password) : $user->password,
+            'image' => $imagePath,
+        ]);
+
+        // Step 5: Update Employee
+        $employee->update([
+            'fname' => $request->fname,
+            'lname' => $request->lname,
+            'gender' => $request->gender,
+            'nationalid' => $request->nationalid,
+            'dob' => $request->dob,
+            'level' => $request->level,
+            'meritalstatus' => $request->meritalstatus,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'emergencycontactname' => $request->emergencycontactname,
+            'emergencycontactphone' => $request->emergencycontactphone,
+            'address' => $request->address,
+            'designation' => $request->designation,
+            'department_id' => $request->department_id,
+            'joindate' => $request->joindate,
+            'probitionprioed' => $request->probitionprioed,
+            'reportingmanager' => $request->reportingmanager,
+            'workshift' => $request->workshift,
+            'emplyeetype' => $request->emplyeetype,
+            'salary' => $request->salary ?? $employee->salary,
+            'status' => $request->status ?? $employee->status,
+        ]);
+
+        return response()->json([
+            'message' => 'Employee & User updated successfully',
+            'user' => $user,
+            'avatar' => url($user->image),
+            'employee' => $employee,
+            'response' => 'success',
+            'response_code' => '200'
+        ], 200);
     }
+
 
     // DELETE /employees/{id}
     public function destroy($id)
