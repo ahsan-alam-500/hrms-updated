@@ -15,25 +15,25 @@ class EmployeeController extends Controller
     public function index()
     {
         $employees = Employee::with('department','user')->get();
-    
+
         $employees->transform(function ($employee) {
             $employee->avatar = $employee->user && $employee->user->image
                 ? url('public/'.$employee->user->image)
                 : null;
             return $employee;
         });
-    
+
         return response()->json([
             'employees' => $employees
         ]);
-    }   
+    }
 
 
 
     public function store(Request $request)
     {
-        
-        
+
+
         // Step 1: Validate fields
         $validator = Validator::make($request->all(), [
             'fname' => 'required|string|max:255',
@@ -152,16 +152,18 @@ class EmployeeController extends Controller
     public function show($id)
     {
         $employee = Employee::with('department','user')->find($id);
-    
+
         if (!$employee) {
             return response()->json(['message' => 'Employee not found'], 404);
         }
-    
+
+        $employee->avatar = $employee->user && $employee->user->image
+                ? url('public/'.$employee->user->image)
+                : null;
+
         return response()->json([
             'status' => 'success',
             'employee' => $employee,
-            'role' => $employee->user ? $employee->user->role : null,
-            'avatar' => $employee->user && $employee->user->image ? url('public/'.$employee->user->image) : null,
         ], 200);
     }
 
