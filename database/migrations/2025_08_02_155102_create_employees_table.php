@@ -28,7 +28,7 @@ return new class extends Migration
             $table->string('emergencycontactphone')->nullable();
             $table->string('address')->nullable();
             $table->string('designation')->nullable();
-            $table->foreignId('department_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('department_id')->nullable()->constrained()->cascadeOnDelete();
             $table->date('joindate')->nullable();
             $table->string('probitionprioed')->nullable();
             $table->string('reportingmanager')->nullable();
