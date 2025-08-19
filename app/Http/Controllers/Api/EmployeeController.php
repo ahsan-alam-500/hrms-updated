@@ -270,13 +270,30 @@ class EmployeeController extends Controller
     // DELETE /employees/{id}
     public function destroy($id)
     {
-        $employee = Employee::find($id);
+        // Step 1: Find employee
+        $employee = Employee::with('user')->find($id);
+
         if (!$employee) {
             return response()->json(['message' => 'Employee not found'], 404);
         }
 
+        // Step 2: Optionally delete user image from server
+        if ($employee->user && $employee->user->image && file_exists(public_path($employee->user->image))) {
+            unlink(public_path($employee->user->image));
+        }
+
+        // Step 3: Delete Employee
         $employee->delete();
 
-        return response()->json(['message' => 'Employee deleted']);
+        // Step 4: Optionally delete related User
+        if ($employee->user) {
+            $employee->user->delete();
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Employee and related user deleted successfully'
+        ], 200);
     }
+
 }
