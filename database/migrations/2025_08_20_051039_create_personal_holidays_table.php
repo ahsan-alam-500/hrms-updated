@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('personal_holidays', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
-            $table->json('holidays')->nullable();
+            $table->string('holidays')->nullable();
             $table->timestamps();
         });
     }
