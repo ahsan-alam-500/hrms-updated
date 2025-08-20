@@ -119,6 +119,73 @@ class AttendanceController extends Controller
     }
 
     // Store attendance with holiday + overtime check
+    // public function store(Request $request)
+    // {
+    //     $request->validate([
+    //         'employee_id' => 'required|exists:employees,id',
+    //         'date'        => 'required|date',
+    //         'in_time'     => 'nullable|date_format:H:i',
+    //         'out_time'    => 'nullable|date_format:H:i|after:in_time',
+    //     ]);
+
+    //     $date       = Carbon::parse($request->date)->toDateString();
+    //     $employeeId = $request->employee_id;
+    //     $status     = 'absent';
+    //     $offreason  = null;
+    //     $overtime   = 0;
+
+    //     $isHoliday = Holiday::where('date', $date)->exists();
+    //     $isPersonalHoliday = PersonalHoliday::where('employee_id', $employeeId)
+    //                         ->where('date', $date)->exists();
+
+    //     // 1. Holiday check
+    //     if ($isHoliday || $isPersonalHoliday) {
+    //         $offreason = $isHoliday ? 'Public Holiday' : 'Personal Holiday';
+
+    //         // If worked on holiday -> Overtime
+    //         if ($request->in_time && $request->out_time) {
+    //             $status = 'present';
+
+    //             $in  = Carbon::createFromFormat('H:i', $request->in_time);
+    //             $out = Carbon::createFromFormat('H:i', $request->out_time);
+    //             $overtime = $out->diffInHours($in); // overtime in hours
+    //         } else {
+    //             $status = 'holiday';
+    //         }
+    //     }
+    //     // 2. Normal working day
+    //     elseif ($request->in_time && $request->out_time) {
+    //         $inTime = Carbon::createFromFormat('H:i', $request->in_time);
+    //         $officeStart = Carbon::createFromTime(9, 15); // 9:15 AM
+
+    //         if ($inTime->greaterThan($officeStart)) {
+    //             $status = 'late';
+    //         } else {
+    //             $status = 'present';
+    //         }
+    //     }
+
+    //     // Save / Update Attendance
+    //     $attendance = Attendance::updateOrCreate(
+    //         [
+    //             'employee_id' => $employeeId,
+    //             'date'        => $date,
+    //         ],
+    //         [
+    //             'in_time'        => $request->in_time,
+    //             'out_time'       => $request->out_time,
+    //             'status'         => $status,
+    //             'off_reason'     => $offreason,
+    //             'overtime_hours' => (start to end )-8 hours,
+    //         ]
+    //     );
+
+    //     $attendance->load('employee');
+    //     return response()->json($attendance, 201);
+    // }
+
+
+    // Store attendance with holiday + overtime check
     public function store(Request $request)
     {
         $request->validate([
@@ -138,34 +205,33 @@ class AttendanceController extends Controller
         $isPersonalHoliday = PersonalHoliday::where('employee_id', $employeeId)
                             ->where('date', $date)->exists();
 
-        // 1. Holiday check
-        if ($isHoliday || $isPersonalHoliday) {
-            $offreason = $isHoliday ? 'Public Holiday' : 'Personal Holiday';
+        if ($request->in_time && $request->out_time) {
+            $in  = Carbon::createFromFormat('H:i', $request->in_time);
+            $out = Carbon::createFromFormat('H:i', $request->out_time);
+            $workedHours = $out->diffInMinutes($in) / 60; // total worked hours in decimal
 
-            // If worked on holiday -> Overtime
-            if ($request->in_time && $request->out_time) {
-                $status = 'present';
+            // Overtime = hours worked minus 8 hours
+            $overtime = max(0, $workedHours - 8);
 
-                $in  = Carbon::createFromFormat('H:i', $request->in_time);
-                $out = Carbon::createFromFormat('H:i', $request->out_time);
-                $overtime = $out->diffInHours($in); // overtime in hours
-            } else {
-                $status = 'holiday';
-            }
-        }
-        // 2. Normal working day
-        elseif ($request->in_time && $request->out_time) {
-            $inTime = Carbon::createFromFormat('H:i', $request->in_time);
+            // Normal working day status
             $officeStart = Carbon::createFromTime(9, 15); // 9:15 AM
-
-            if ($inTime->greaterThan($officeStart)) {
-                $status = 'late';
+            if (!$isHoliday && !$isPersonalHoliday) {
+                $status = $in->greaterThan($officeStart) ? 'late' : 'present';
             } else {
+                // Holiday worked
                 $status = 'present';
+                $offreason = $isHoliday ? 'Public Holiday' : 'Personal Holiday';
+            }
+        } else {
+            // No in/out time
+            if ($isHoliday || $isPersonalHoliday) {
+                $status = 'holiday';
+                $offreason = $isHoliday ? 'Public Holiday' : 'Personal Holiday';
+            } else {
+                $status = 'absent';
             }
         }
 
-        // Save / Update Attendance
         $attendance = Attendance::updateOrCreate(
             [
                 'employee_id' => $employeeId,
@@ -176,11 +242,12 @@ class AttendanceController extends Controller
                 'out_time'       => $request->out_time,
                 'status'         => $status,
                 'off_reason'     => $offreason,
-                'overtime_hours' => $overtime,
+                'overtime_hours' => round($overtime, 2), // optional: round to 2 decimals
             ]
         );
 
         $attendance->load('employee');
         return response()->json($attendance, 201);
     }
+
 }
