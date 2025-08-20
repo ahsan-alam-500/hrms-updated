@@ -38,14 +38,17 @@ class AttendanceController extends Controller
 
         $date = Carbon::parse($request->date)->toDateString();
         $employeeId = $request->employee_id;
+        $offreason = "";
 
         // 1. Check if public holiday
         if (Holiday::where('date', $date)->exists()) {
             $status = 'holiday';
+            $offreason = 'Public Holiday';
         }
         // 2. Check if personal holiday
         elseif (PersonalHoliday::where('employee_id', $employeeId)->where('date', $date)->exists()) {
             $status = 'holiday';
+            $offreason = 'Personal Holiday';
         }
         // 3. Otherwise normal attendance
         elseif ($request->in_time && $request->out_time) {
