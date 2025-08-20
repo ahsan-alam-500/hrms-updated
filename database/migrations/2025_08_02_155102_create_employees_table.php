@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('level')->nullable();
             $table->string('meritalstatus')->nullable();
             $table->string('email')->unique();
+            $table->string('gender')->nullable();
             $table->string('phone')->nullable();
             $table->string('emergencycontactname')->nullable();
             $table->string('emergencycontactphone')->nullable();
