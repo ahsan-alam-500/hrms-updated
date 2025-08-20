@@ -66,4 +66,8 @@ class Employee extends Model
     {
         return $this->hasMany(ProjectIncentives::class);
     }
+    public function personalHolidays()
+    {
+        return $this->hasMany(PersonalHoliday::class);
+    }
 }

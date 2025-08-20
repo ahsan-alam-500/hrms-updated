@@ -14,11 +14,11 @@ class EmployeeController extends Controller
 
     public function index()
     {
-        $employees = Employee::with('department','user')->get();
+        $employees = Employee::with('department', 'user')->get();
 
         $employees->transform(function ($employee) {
             $employee->avatar = $employee->user && $employee->user->image
-                ? url('public/'.$employee->user->image)
+                ? url('public/' . $employee->user->image)
                 : null;
             return $employee;
         });
@@ -138,12 +138,12 @@ class EmployeeController extends Controller
                 ? 'Employee added to existing user successfully'
                 : 'Employee & User created successfully',
             'user' => $user,
-            'avatar'=>url($user->image),
+            'avatar' => url($user->image),
             'employee' => $employee,
             'response' => 'success',
             'response_code' => '200'
         ], 201);
-}
+    }
 
 
 
@@ -151,15 +151,15 @@ class EmployeeController extends Controller
     // GET /employees/{id}
     public function show($id)
     {
-        $employee = Employee::with('department','user')->find($id);
+        $employee = Employee::with('department', 'user')->find($id);
 
         if (!$employee) {
             return response()->json(['message' => 'Employee not found'], 404);
         }
 
         $employee->avatar = $employee->user && $employee->user->image
-                ? url('public/'.$employee->user->image)
-                : null;
+            ? url('public/' . $employee->user->image)
+            : null;
 
         return response()->json([
             'status' => 'success',
@@ -295,5 +295,4 @@ class EmployeeController extends Controller
             'message' => 'Employee and related user deleted successfully'
         ], 200);
     }
-
 }
