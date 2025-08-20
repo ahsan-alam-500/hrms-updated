@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('holidays', function (Blueprint $table) {
             $table->id();
+            $table->string('name')->nullable();
+            $table->string('type')->nullable();
+            $table->date('date');
+            $table->date('description')->nullable();
             $table->timestamps();
         });
     }
