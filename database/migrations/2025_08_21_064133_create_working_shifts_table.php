@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('working_shifts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
             $table->string('shift_name');
             $table->time('start_time');
             $table->time('end_time');
