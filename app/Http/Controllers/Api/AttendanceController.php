@@ -382,12 +382,12 @@ class AttendanceController extends Controller
     return response()->json([
         'employees' => $data,
         'counters'  => [
-            'present_today' => $countersToday['Present'],
-            'absent_today'  => $countersToday['Absent'],
-            'late_today'    => $countersToday['Late'],
-            'half_today'    => $countersToday['Half'],
-            'leave_today'   => $countersToday['Leave'],
-            'holiday_today' => $countersToday['Holiday'],
+            'total_present_today' => $countersToday['Present'],
+            'total_absent_today'  => $countersToday['Absent'],
+            'total_late_today'    => $countersToday['Late'],
+            'total_half_today'    => $countersToday['Half'],
+            'total_leave_today'   => $countersToday['Leave'],
+            'total_holiday_today' => $countersToday['Holiday'],
             'total_leave'   => $totalLeaveApproved,
         ],
     ]);
