@@ -70,4 +70,9 @@ class Employee extends Model
     {
         return $this->hasMany(PersonalHoliday::class);
     }
+
+    public function workingShifts()
+    {
+        return $this->hasMany(WorkingShift::class);
+    }
 }
