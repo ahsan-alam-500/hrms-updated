@@ -73,6 +73,6 @@ class Employee extends Model
 
     public function workingShifts()
     {
-        return $this->hasMany(WorkingShift::class);
+        return $this->hasMany(EmployeeHasShift::class);
     }
 }
