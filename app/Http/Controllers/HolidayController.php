@@ -13,14 +13,24 @@ class HolidayController extends Controller
 {
     public function index()
     {
+        $today = now()->toDateString();
+
+        // Delete past holidays
+        Holiday::whereDate('date', '<', $today)->delete();
+
+        // Only upcoming holidays
+        $public_holidays = Holiday::whereDate('date', '>=', $today)
+            ->orderBy('date', 'asc')
+            ->get();
+
         $employees = Employee::with("personalHolidays")->get();
-        $public_holidays = Holiday::all();
 
         return response()->json([
             "employees" => $employees,
             "public"    => $public_holidays,
         ], 200);
     }
+
 
     public function store(Request $request)
     {
