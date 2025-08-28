@@ -135,8 +135,9 @@ class AttendanceController extends Controller
         $totalDays = Carbon::createFromDate($year, $month, 1)->daysInMonth;
         $workingDays = max(1, $totalDays - $holidayCount);
 
+
         // Load employees with user + shifts
-        $employees = Employee::with(["user", "employeeHasShift.shift"])->get([
+        $employees = Employee::with(["user","workingshift"])->get([
             "id",
             "fname",
             "lname",
@@ -144,6 +145,8 @@ class AttendanceController extends Controller
             "user_id",
             "workshift",
         ]);
+
+
 
         $result = [];
 
@@ -164,10 +167,7 @@ class AttendanceController extends Controller
             $latePercentage = round(($lateDays / $workingDays) * 100, 2);
 
             // Get all shifts assigned to employee
-            $shifts = $employee->employeeHasShift
-                ->map(fn($s) => $s->shift?->shift_name)
-                ->filter()
-                ->values();
+           $shifts = $employee->workingshift?->shift_name;
 
             $result[] = [
                 "monthYear" => Carbon::createFromDate($year, $month, 1)->format(
@@ -181,7 +181,7 @@ class AttendanceController extends Controller
                 "avatar" => $employee->user?->image
                     ? asset("public/" . $employee->user->image)
                     : asset("default-avatar.png"),
-                "shifts" => $shifts, // array of shift names
+                "shift" => $shifts, // array of shift names
                 "total_days" => $totalDays,
                 "summary" => $summary,
                 "late_percentage" => $latePercentage,
@@ -282,83 +282,67 @@ class AttendanceController extends Controller
         return response()->json($result);
     }
 
-    //Personal attendence sheet for employee id
-    public function attendanceFilterPersonal(Request $request, $id)
+
+        public function attendanceFilterPersonal(Request $request, $id)
     {
         $month = $request->SelectedMonth ?? Carbon::now()->format("m");
-        $year = $request->SelectedYear ?? Carbon::now()->format("Y");
+        $year  = $request->SelectedYear ?? Carbon::now()->format("Y");
 
-        $officeStart = Carbon::createFromTimeString("09:00:00");
-        $standardMinutes = 8 * 60; // 8 hours standard
+        $officeStart      = Carbon::createFromTimeString("09:00:00");
+        $standardMinutes  = 8 * 60; // 8 hours = 480 minutes
 
-        $employee = Employee::with([
-            "department",
-            "employeehasshift.shift",
-        ])->findOrFail($id);
+        // Employee with relations
+        $employee = Employee::with(["department", "workingshift"])
+            ->findOrFail($id);
 
+        // Attendance list
         $attendances = Attendance::where("employee_id", $id)
             ->whereMonth("date", $month)
             ->whereYear("date", $year)
             ->orderBy("date", "desc")
             ->get();
 
-        $result = $attendances->map(function ($att) use (
-            $employee,
-            $officeStart,
-            $standardMinutes
-        ) {
-            $in = $att->in_time ? Carbon::parse($att->in_time) : null;
+        $result = $attendances->map(function ($att) use ($employee, $officeStart, $standardMinutes) {
+            $in  = $att->in_time ? Carbon::parse($att->in_time) : null;
             $out = $att->out_time ? Carbon::parse($att->out_time) : null;
 
-            // Production minutes (subtract break if needed)
-            $production_minutes =
-                $in && $out ? max(0, $in->diffInMinutes($out) - 60) : 0;
+            // ✅ Production minutes (deduct 1 hour break)
+            $production_minutes = ($in && $out)
+                ? max(0, $in->diffInMinutes($out) - 60)
+                : 0;
 
-            $production_minutes = abs($production_minutes);
-            // Overtime hours (above 8 hours)
-            $overtime_hours = max(
-                0,
-                ($production_minutes - $standardMinutes) / 60
-            );
-            $overtime_hours = floor($overtime_hours);
+            // ✅ Overtime hours (above standard minutes)
+            $overtime_hours = ($production_minutes > $standardMinutes)
+                ? floor(($production_minutes - $standardMinutes) / 60)
+                : 0;
 
-            // Late minutes
-            $late_minutes =
-                $in && $in->greaterThan($officeStart)
-                    ? $in->diffInMinutes($officeStart)
-                    : 0;
-
-            // Shift names
-            $shifts = $employee->employeeHasShift
-                ->map(fn($s) => $s->shift?->shift_name)
-                ->filter()
-                ->values();
+            // ✅ Late minutes
+            $late_minutes = ($in && $in->greaterThan($officeStart))
+                ? $in->diffInMinutes($officeStart)
+                : 0;
 
             return [
-                "id" => $att->id,
-                "employee_id" => $att->employee_id,
-                "employee_eid" => $employee->eid,
-                "employee_designation" => $employee->designation,
-                "employee_name" => trim(
-                    $employee->fname . " " . $employee->lname
-                ),
-                "department" => $employee->department?->name,
-                "shifts" =>
-                    WorkingShift::where("id", $employee->workshift)->first()
-                        ->shift_name ?? null,
-                "date" => $att->date,
-                "status" => $att->status,
-                "in_time" => $att->in_time,
-                "out_time" => $att->out_time,
-                "late" => abs($late_minutes),
-                "production_minutes" => abs($production_minutes),
-                "overtime" => abs($overtime_hours),
-                "monthYear" => Carbon::parse($att->date)->format("M-Y"),
+                "id"                  => $att->id,
+                "employee_id"         => $att->employee_id,
+                "employee_eid"        => $employee->eid,
+                "employee_designation"=> $employee->designation,
+                "employee_name"       => trim($employee->fname . " " . $employee->lname),
+                "department"          => $employee->department?->name,
+                "shifts"               => $employee->workingshift?->shift_name,
+                "date"                => $att->date,
+                "status"              => $att->status,
+                "in_time"             => $att->in_time,
+                "out_time"            => $att->out_time,
+                "late"                => abs($late_minutes),
+                "production_minutes"  => abs($production_minutes),
+                "overtime"            => abs($overtime_hours),
+                "monthYear"           => Carbon::parse($att->date)->format("M-Y"),
             ];
         });
 
         return response()->json($result);
     }
+
 
     //Initial
     // Store attendance with holiday + overtime check
@@ -386,7 +370,7 @@ class AttendanceController extends Controller
         // Check holidays
         $isHoliday = Holiday::where("date", $date)->exists();
         $isPersonalHoliday = PersonalHoliday::where("employee_id", $employeeId)
-            ->where("date", $date)
+            ->where("created_at", $date)
             ->exists();
 
         if ($request->in_time && $request->out_time) {
@@ -528,7 +512,7 @@ class AttendanceController extends Controller
         // check holidays
         $isHoliday = Holiday::where("date", $date)->exists();
         $isPersonalHoliday = PersonalHoliday::where("employee_id", $employeeId)
-            ->where("date", $date)
+            ->where("created_at", $date)
             ->exists();
 
         if (!empty($att["in_time"]) && !empty($att["out_time"])) {
