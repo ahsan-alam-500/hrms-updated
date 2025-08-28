@@ -4,9 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Employee extends Model
+class employee extends Model
 {
     protected $fillable = [
+        'id',
         'user_id',
         'emplyeetype',
         'eid',
@@ -66,13 +67,13 @@ class Employee extends Model
     {
         return $this->hasMany(ProjectIncentives::class);
     }
-    public function personalHolidays()
+        public function personalHolidays()
     {
         return $this->hasMany(PersonalHoliday::class);
     }
 
-    public function employeeHasShift()
+        public function workingshift()
     {
-        return $this->hasMany(EmployeeHasShift::class);
+    return $this->belongsTo(WorkingShift::class, 'workshift');
     }
 }

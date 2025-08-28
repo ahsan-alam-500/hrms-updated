@@ -9,4 +9,8 @@ class WorkingShift extends Model
     protected $table = "working_shifts";
     protected $fillable = ["id","shift_name", "start_time", "end_time", "grace_time", "created_at", "updated_at"];
 
+    public function employeeHasShift()
+    {
+        return $this->hasMany(EmployeeHasShift::class);
+    }
 }
