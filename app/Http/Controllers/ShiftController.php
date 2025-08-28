@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\WorkingShift;
+use App\Models\employee as Employee;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
 class ShiftController extends Controller
 {
+    //=================x=======================
     // ✅ Get all shifts
+    //=================x=======================
+
     public function index()
     {
         try {
@@ -27,7 +31,12 @@ class ShiftController extends Controller
         }
     }
 
-      // ✅ Create a shift
+
+    //==========================x============================
+    //✅ Create a shift
+    //==========================x============================
+
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -50,7 +59,12 @@ class ShiftController extends Controller
         ], 201);
     }
 
-    // ✅ Update a shift
+
+
+    //=====================x==============================
+    //✅  update a shift
+    //=====================x==============================
+
     public function update(Request $request, $id)
     {
         $shift = WorkingShift::find($id);
@@ -82,6 +96,11 @@ class ShiftController extends Controller
         ]);
     }
 
+
+    //=======================x=========================
+    // ✅ Delete a shift
+    //=======================x=========================
+
     public function destroy($id)
     {
         $shift = WorkingShift::findOrFail($id);
@@ -90,5 +109,42 @@ class ShiftController extends Controller
 
         return response()->json(['message' => 'Document deleted successfully']);
     }
+
+    // ================================x================================
+    //✅ Assign shift page opening get method
+    // ================================x================================
+
+    public function AssignEmployeeToShiftPage(){
+    $data = Employee::with(['user','workingshift'])->get()->map(function($emp){
+        return [
+            'id' => $emp->id,
+            'avatar' => url('public/'.$emp->user->image),
+            'fname' => $emp->fname,
+            'lname' => $emp->lname,
+            'eid' => $emp->eid,
+            'shift'=>$emp->workingshift,
+        ];
+    });
+
+    return response()->json($data);
+    }
+
+    // ================================x=================================
+    //✅ Assign ermployee to a shift
+    // ================================x=================================
+
+    public function AssignEmployeeToShiftPost(Request $request)
+    {
+
+                Employee::where('id', $employeeId)->update([
+                    'workshift' => $shiftId
+                ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Employee shifts assigned successfully.'
+        ]);
+    }
+
 
 }
