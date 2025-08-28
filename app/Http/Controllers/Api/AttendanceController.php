@@ -17,6 +17,10 @@ use Carbon\Carbon;
 
 class AttendanceController extends Controller
 {
+    //====================================================
+    // Returning and calculating every initial attendances
+    //====================================================
+
     public function index()
     {
         $startOfMonth = Carbon::now()
@@ -101,8 +105,9 @@ class AttendanceController extends Controller
     }
 
 
-
-
+    //========================X===========================
+    //everyone attendance filtering month by year and date
+    //========================X===========================
 
     public function attendanceFilter(Request $request)
     {
@@ -191,13 +196,9 @@ class AttendanceController extends Controller
         return response()->json($result);
     }
 
-    // Show specific attendance
-    public function show(Attendance $attendance)
-    {
-        dd("from show attandance");
-    }
-
+    //========================X===========================
     //after public Employee attendance
+    //========================X===========================
     public function employeeAttendance($id)
     {
         $employee = Employee::with(["department", "workingshift"])->findOrFail(
@@ -283,7 +284,11 @@ class AttendanceController extends Controller
     }
 
 
-        public function attendanceFilterPersonal(Request $request, $id)
+    //========================X===========================
+    //Personally filter attendance with year and month
+    //========================X===========================
+
+    public function attendanceFilterPersonal(Request $request, $id)
     {
         $month = $request->SelectedMonth ?? Carbon::now()->format("m");
         $year  = $request->SelectedYear ?? Carbon::now()->format("Y");
@@ -344,8 +349,10 @@ class AttendanceController extends Controller
     }
 
 
-    //Initial
+    //========================X===========================
     // Store attendance with holiday + overtime check
+    //========================X===========================
+
     public function store(Request $request)
     {
         // return $request;
