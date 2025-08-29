@@ -110,6 +110,11 @@ class ShiftController extends Controller
         return response()->json(['message' => 'Document deleted successfully']);
     }
 
+    // ==================================================================================================================
+    //✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅ A✅
+    // ==================================================================================================================
+
+
     // ================================x================================
     //✅ Assign shift page opening get method
     // ================================x================================
@@ -121,29 +126,38 @@ class ShiftController extends Controller
             'avatar' => url('public/'.$emp->user->image),
             'fname' => $emp->fname,
             'lname' => $emp->lname,
+            'designation' => $emp->designation,
             'eid' => $emp->eid,
             'shift'=>$emp->workingshift,
         ];
     });
 
-    return response()->json($data);
+    $shifts = WorkingShift::all();
+
+    return response()->json(["data"=>$data,"shifts"=>$shifts]);
     }
 
     // ================================x=================================
     //✅ Assign ermployee to a shift
     // ================================x=================================
 
-    public function AssignEmployeeToShiftPost(Request $request)
+    public function AssignEmployeeToShiftPost(Request $request,$id)
     {
 
-                Employee::where('id', $employeeId)->update([
-                    'workshift' => $shiftId
-                ]);
+
+        $employee = Employee::find($id);
+
+        // return $employee;
+
+
+        $done = $employee->update([
+            'workshift' => $request->updateShift,
+        ]);
+
 
         return response()->json([
-            'status' => 'success',
-            'message' => 'Employee shifts assigned successfully.'
-        ]);
+            'success' => true
+        ],200);
     }
 
 
