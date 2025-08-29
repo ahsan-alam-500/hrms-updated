@@ -333,7 +333,8 @@ class AttendanceController extends Controller
                 "employee_designation"=> $employee->designation,
                 "employee_name"       => trim($employee->fname . " " . $employee->lname),
                 "department"          => $employee->department?->name,
-                "shifts"               => $employee->workingshift?->shift_name,
+                // "shifts"               => $employee->workingshift?->shift_name,
+                "shifts"           => WorkingShift::where('id',$att->shift)->value('shift_name'),
                 "date"                => $att->date,
                 "status"              => $att->status,
                 "in_time"             => $att->in_time,
@@ -485,7 +486,7 @@ class AttendanceController extends Controller
         }
 
         // Use attendance shift if exists, fallback to employee current shift
-        $shiftId = $att["shift"] ?? $employee->workshift;
+        $shiftId = $employee->workshift; // If employee change shift then insert from update shift according the employee table
         $shift = WorkingShift::find($shiftId);
 
         if (!$shift) {
@@ -535,11 +536,22 @@ class AttendanceController extends Controller
 
             $overtime_hours = max(0, ($workedMinutes - $standardMinutes) / 60);
 
-            if (
-                $in->greaterThan($officeStart->copy()->addMinutes($gracePeriod))
-            ) {
-                $late = $officeStart->diffInMinutes($in);
+
+            $graceStart = $officeStart->copy()->addMinutes($gracePeriod);
+
+            if ($in->greaterThan($graceStart)) {
+                $late = abs($in->diffInMinutes($graceStart));
+            } else {
+                $late = 0;
             }
+
+            // if (
+            //     $in->greaterThan($officeStart->copy()->addMinutes($gracePeriod))
+            // ) {
+            //     $late = $officeStart->diffInMinutes($in);
+
+            //     $late = $late>$gracePeriod ? $late : $late-$gracePeriod;
+            // }
 
             $status =
                 !$isHoliday && !$isPersonalHoliday
