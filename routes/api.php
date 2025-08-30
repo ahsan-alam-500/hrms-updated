@@ -107,7 +107,7 @@ Route::prefix('v1')->group(function () {
         //Employee Dashboard and Other
         //==============❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️===================
 
-        Route::apiResource('employeeinfo',EmployeeDashboard::class);
+        Route::apiResource('employeeleave',EmployeeDashboard::class);
 
     });
 
