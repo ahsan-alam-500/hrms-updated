@@ -51,25 +51,24 @@ class EmployeeDashboard extends Controller
         ], 201);
     }
 
-    public function show($id){
+    public function show($id)
+    {
 
-        $leaves = leave::where('employee_id',$id)->get();
+        $leaves = leave::where('employee_id', $id)->get();
 
         $count = $leaves->count();
 
 
-        if($count>0){
-        return response()->json([
-            "leaves"=>$leaves
-            ],200);
+        if ($count > 0) {
+            return response()->json([
+                "leaves" => $leaves
+            ], 200);
         }
 
         return response()->json([
-        'message' => 'No data found',
-        'status' => '403',
+            'message' => 'No data found',
+            'status' => '403',
         ], 200);
-
-
     }
 
     /**********************************
