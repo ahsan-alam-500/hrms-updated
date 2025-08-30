@@ -16,8 +16,21 @@ class LeaveController extends Controller
         // Eager load employee for performance
         $leaves = Leave::with('employee')->get();
 
+        // Map leaves to attach image directly to employee
+        $leaves = $leaves->map(function ($leave) {
+            if ($leave->employee && $leave->employee->user) {
+                $leave->employee->image = $leave->employee->user->image
+                    ? url('public/' . $leave->employee->user->image)
+                    : null;
+                unset($leave->employee->user); // remove nested user
+            }
+            return $leave;
+        });
+
         // Group leaves by status efficiently
         $groupedLeaves = $leaves->groupBy('status');
+
+
 
         return response()->json([
             'all_leave'  => $leaves,
