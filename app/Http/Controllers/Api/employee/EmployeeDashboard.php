@@ -15,13 +15,16 @@ class EmployeeDashboard extends Controller
      *********************************/
     public function store(Request $request)
     {
+
         $validator = Validator::make($request->all(), [
-            'employee_id' => 'required|exists:employees,id',
-            'leave_type'  => 'required|string|max:255',
+            'employee_id' => 'required',
+            'leave_type'  => 'required',
             'start_date'  => 'required|date',
             'end_date'    => 'required|date|after_or_equal:start_date',
             'reason'      => 'nullable|string',
         ]);
+
+
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
@@ -48,8 +51,17 @@ class EmployeeDashboard extends Controller
         ], 201);
     }
 
+    public function show($id){
+
+        $leaves = leave::where('employee_id',$id)->get();
+
+        return response()->json([
+            "leaves"=>$leaves
+            ],200);
+    }
+
     /**********************************
-     ***** Update a leave request ******
+     ***** Update a leave request *****
      *********************************/
     public function update(Request $request, $id)
     {
@@ -104,9 +116,17 @@ class EmployeeDashboard extends Controller
             return response()->json(['message' => 'Leave not found'], 404);
         }
 
+        if (in_array($leave->status, ['under_review', 'rejected', 'approved'])) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'You cannot delete this record now',
+            ], 403);
+        }
+
         $leave->delete();
 
         return response()->json([
+            'status' => 'success',
             'message' => 'Leave request deleted successfully'
         ], 200);
     }
