@@ -3,26 +3,44 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Leave;
+use App\Models\leave as Leave;
 use Illuminate\Http\Request;
 
 class LeaveController extends Controller
 {
+    //=============================================
     // Show all leave applications with employee info
+    //=============================================
     public function index()
     {
+        // Eager load employee for performance
         $leaves = Leave::with('employee')->get();
-        return response()->json($leaves);
+
+        // Group leaves by status efficiently
+        $groupedLeaves = $leaves->groupBy('status');
+
+        return response()->json([
+            'all_leave'  => $leaves,
+            'pending'    => $groupedLeaves->get('pending', collect()),
+            'in_review'  => $groupedLeaves->get('in_review', collect()),
+            'approved'   => $groupedLeaves->get('approved', collect()),
+            'rejected'   => $groupedLeaves->get('rejected', collect()),
+        ], 200);
     }
 
+
+    //=============================================
     // Show specific leave
+    //=============================================
     public function show(Leave $leave)
     {
         $leave->load('employee');
         return response()->json($leave);
     }
 
+    //=============================================
     // Store new leave request
+    //=============================================
     public function store(Request $request)
     {
         $request->validate([
@@ -39,13 +57,14 @@ class LeaveController extends Controller
         return response()->json($leave, 201);
     }
 
+    //=============================================
     // Update leave (e.g., for approving/rejecting)
+    //=============================================
     public function update(Request $request, $id)
     {
         try {
             $data = $request->only(['status', 'employee_id', 'leave_type', 'start_date', 'end_date', 'reason']);
 
-            // $id সরাসরি ব্যবহার করুন, request থেকে নেবেন না
             $leave = Leave::findOrFail($id);
             $leave->update($data);
             $leave->load('employee');
