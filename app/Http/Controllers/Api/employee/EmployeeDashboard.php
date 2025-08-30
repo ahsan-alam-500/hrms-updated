@@ -6,12 +6,12 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\leave;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class EmployeeDashboard extends Controller
 {
-
     /**********************************
-     *****Store a new leave request****
+     ***** Store a new leave request ****
      *********************************/
     public function store(Request $request)
     {
@@ -27,11 +27,17 @@ class EmployeeDashboard extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        // Calculate number of days
+        $start = Carbon::parse($request->start_date);
+        $end = Carbon::parse($request->end_date);
+        $days = $start->diffInDays($end) + 1; // +1 to include start date
+
         $leave = leave::create([
             'employee_id' => $request->employee_id,
             'leave_type'  => $request->leave_type,
             'start_date'  => $request->start_date,
             'end_date'    => $request->end_date,
+            'days'        => $days,
             'reason'      => $request->reason,
             'status'      => $request->status ?? 'pending'
         ]);
@@ -43,9 +49,8 @@ class EmployeeDashboard extends Controller
     }
 
     /**********************************
-     ***** Update a leave request******
+     ***** Update a leave request ******
      *********************************/
-
     public function update(Request $request, $id)
     {
         $leave = leave::find($id);
@@ -66,12 +71,20 @@ class EmployeeDashboard extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        // Recalculate days if dates are updated
+        if ($request->has('start_date') || $request->has('end_date')) {
+            $start = Carbon::parse($request->start_date ?? $leave->start_date);
+            $end = Carbon::parse($request->end_date ?? $leave->end_date);
+            $leave->days = $start->diffInDays($end) + 1;
+        }
+
         $leave->update($request->only([
             'leave_type',
             'start_date',
             'end_date',
             'reason',
-            'status'
+            'status',
+            'days'
         ]));
 
         return response()->json([
@@ -81,7 +94,7 @@ class EmployeeDashboard extends Controller
     }
 
     /**********************************
-     ***** Delete a leave request******
+     ***** Delete a leave request ******
      *********************************/
     public function destroy($id)
     {
