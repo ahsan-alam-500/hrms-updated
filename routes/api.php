@@ -28,7 +28,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::post('/forgotpassword', [AuthController::class, 'forgetPassword']);
-    Route::post('/optvalidation', [AuthController::class,'optValidation']);
+    Route::post('/optvalidation', [AuthController::class, 'optValidation']);
     Route::post('/resetpassword', [AuthController::class, 'resetPassword']);
 
 
@@ -58,14 +58,14 @@ Route::prefix('v1')->group(function () {
         //Shift CRUD
         //============================================================================
         Route::apiResource('shifts', ShiftController::class);
-        Route::get('shift/assign', [ShiftController::class,'AssignEmployeeToShiftPage']);
-        Route::put('shift/assign/{id}', [ShiftController::class,'AssignEmployeeToShiftPost']);
+        Route::get('shift/assign', [ShiftController::class, 'AssignEmployeeToShiftPage']);
+        Route::put('shift/assign/{id}', [ShiftController::class, 'AssignEmployeeToShiftPost']);
 
         //============================================================================
         // Employee CRUD
         //============================================================================
         Route::apiResource('employees', EmployeeController::class);
-        Route::get('employee/attributes',[EmployeeController::class,'employeeAttributes']);
+        Route::get('employee/attributes', [EmployeeController::class, 'employeeAttributes']);
 
         //============================================================================
         // Attendance
@@ -74,7 +74,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/attendance/filter', [AttendanceController::class, 'attendanceFilter']);
         Route::post('/attendance/filter/{id}', [AttendanceController::class, 'attendanceFilterPersonal']);
         Route::get('/employee/attendance/{id}', [AttendanceController::class, 'employeeAttendance']);
-        Route::post('attendance/sync',[AttendanceController::class,'attendanceSyncer']);
+        Route::post('attendance/sync', [AttendanceController::class, 'attendanceSyncer']);
 
         //============================================================================
         // Leave
@@ -107,8 +107,7 @@ Route::prefix('v1')->group(function () {
         //Employee Dashboard and Other
         //==============❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️===================
 
-        Route::apiResource('employeeleave',EmployeeDashboard::class);
-
+        Route::apiResource('employeeleave', EmployeeDashboard::class);
     });
 
 
@@ -124,7 +123,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/local/set/users', function () {
         $employees = Employee::all(); // fetch all employees
 
-        $result = $employees->map(function($emp) {
+        $result = $employees->map(function ($emp) {
             return [
                 "uid" => (int) preg_replace('/\D/', '', $emp->eid),
                 "userId" => (int) $emp->id,
@@ -137,6 +136,4 @@ Route::prefix('v1')->group(function () {
 
         return response()->json($result);
     });
-
-
 });
