@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Validator;
 
 class TeamController extends Controller
 {
-   public function index()
+    public function index()
     {
         try {
             $teams = Team::with('teamEmployees.employee.user')->get();
@@ -42,7 +42,6 @@ class TeamController extends Controller
                 'status' => 'success',
                 'teams' => $teams
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
