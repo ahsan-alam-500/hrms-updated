@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ShiftController;
@@ -8,16 +7,20 @@ use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EmployeeController;
+use App\Http\Controllers\ActivationController;
 use App\Http\Controllers\Api\HolidayController;
 use App\Http\Controllers\Api\LeaveController;
 use App\Http\Controllers\Api\NoticeController;
 use App\Http\Controllers\Api\PayrollController;
+use App\Http\Controllers\Api\TeamController;
+use App\Http\Controllers\Api\TeamEmployeeController;
 use App\Models\employee as Employee;
 //====================================
 //Employee
 //----------------------------------
 use App\Http\Controllers\Api\employee\EmployeeDashboard;
 //====================================
+use Illuminate\Support\Facades\Route;
 
 
 Route::prefix('v1')->group(function () {
@@ -28,7 +31,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::post('/forgotpassword', [AuthController::class, 'forgetPassword']);
-    Route::post('/optvalidation', [AuthController::class, 'optValidation']);
+    Route::post('/optvalidation', [AuthController::class,'optValidation']);
     Route::post('/resetpassword', [AuthController::class, 'resetPassword']);
 
 
@@ -58,14 +61,14 @@ Route::prefix('v1')->group(function () {
         //Shift CRUD
         //============================================================================
         Route::apiResource('shifts', ShiftController::class);
-        Route::get('shift/assign', [ShiftController::class, 'AssignEmployeeToShiftPage']);
-        Route::put('shift/assign/{id}', [ShiftController::class, 'AssignEmployeeToShiftPost']);
+        Route::get('shift/assign', [ShiftController::class,'AssignEmployeeToShiftPage']);
+        Route::put('shift/assign/{id}', [ShiftController::class,'AssignEmployeeToShiftPost']);
 
         //============================================================================
         // Employee CRUD
         //============================================================================
         Route::apiResource('employees', EmployeeController::class);
-        Route::get('employee/attributes', [EmployeeController::class, 'employeeAttributes']);
+        Route::get('employee/attributes',[EmployeeController::class,'employeeAttributes']);
 
         //============================================================================
         // Attendance
@@ -74,7 +77,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/attendance/filter', [AttendanceController::class, 'attendanceFilter']);
         Route::post('/attendance/filter/{id}', [AttendanceController::class, 'attendanceFilterPersonal']);
         Route::get('/employee/attendance/{id}', [AttendanceController::class, 'employeeAttendance']);
-        Route::post('attendance/sync', [AttendanceController::class, 'attendanceSyncer']);
+        Route::post('attendance/sync',[AttendanceController::class,'attendanceSyncer']);
 
         //============================================================================
         // Leave
@@ -101,13 +104,24 @@ Route::prefix('v1')->group(function () {
         //============================================================================
         Route::apiResource('notice', NoticeController::class);
 
+        //============================================================================
+        //Teams
+        //============================================================================
+        Route::apiResource('teams', TeamController::class);
+
+        //============================================================================
+        //Teams and employee assign as member
+        //============================================================================
+        Route::apiResource('maketeams', TeamEmployeeController::class);
+
 
         //==============❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️===================
         //Employee Dashboard and Other
         //Employee Dashboard and Other
         //==============❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️===================
 
-        Route::apiResource('employeeleave', EmployeeDashboard::class);
+        Route::apiResource('employeeleave',EmployeeDashboard::class);
+
     });
 
 
@@ -123,7 +137,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/local/set/users', function () {
         $employees = Employee::all(); // fetch all employees
 
-        $result = $employees->map(function ($emp) {
+        $result = $employees->map(function($emp) {
             return [
                 "uid" => (int) preg_replace('/\D/', '', $emp->eid),
                 "userId" => (int) $emp->id,
@@ -136,4 +150,8 @@ Route::prefix('v1')->group(function () {
 
         return response()->json($result);
     });
+
+    Route::post('activate/{$id}',[ActivationController::class,'activate']);
+
+
 });
