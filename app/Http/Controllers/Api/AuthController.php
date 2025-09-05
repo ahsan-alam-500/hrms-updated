@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\employee;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -15,12 +16,22 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
+
+        if($request->fname){
         $request->validate([
+            'fname' => 'required|string|max:255',
+            'lname' => 'required|string|max:255',
+            'email' => 'required|email',
+            'password' => 'required|min:6'
+        ]);
+        }else{
+            $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
             'image' => 'nullable|image',
         ]);
+        }
 
         if ($request->hasFile('image')) {
             $image = $request->file('image');
@@ -31,15 +42,61 @@ class AuthController extends Controller
             })->save($path);
         }
 
+    $otp = rand(111111,999999);
 
-        $user = User::create([
+    if($request->fname){
+        $user = User::updateOrCreate(
+            ['email' => $request->email],
+            [
+                'name' => $request->fname ." ".$request->lname,
+                'email_varified_otp' => $otp,
+                'isAggree' => $request->isAggree,
+                'password' => bcrypt($request->password),
+            ]
+        );
+
+
+        Mail::send('emails.mailverify', ['userName' => $user->fname, 'otpCode' => $otp], function ($message) use ($user) {
+            $message->to($user->email)
+                ->subject('Email varification OTP');
+        });
+
+        return response()->json(['message' => 'Otp Send to Your email ', 'user' => $user]);
+    }else{
+            $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'image' => $request->image ? config('app.url') . '/images/' . $filename : null,
             'password' => bcrypt($request->password),
         ]);
-        return response()->json(['message' => 'User registered successfully', 'user' => $user]);
+        return response()->json(['message' => 'User registered successfully ', 'user' => $user]);
     }
+    }
+
+
+
+    public function varifyemail(Request $request)
+    {
+        $user = User::where('email', $request->email)->first();
+
+        if ($user && $request->otp == $user->email_varified_otp) {
+            $user->update([
+                'email_verified_at' => now(),
+                'is_email_varified' => true
+            ]);
+
+            return response()->json([
+                "message" => "Otp verification successful",
+            ], 200);
+        }
+
+        return response()->json([
+            "message" => "Verification failed, wrong otp"
+        ], 400);
+    }
+
+
+
 
 
     public function login(Request $request)
@@ -56,12 +113,16 @@ class AuthController extends Controller
             return response()->json(['error' => 'Invalid credentials'], 401);
         }
 
+        $employee = employee::where('user_id',$userExists->id)->latest()->first();
+
         return response()->json([
             'message' => 'Login successfully',
+            'avatar' => $employee->user->image ? url('public/'.$employee->user->image) : "",
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => auth('api')->factory()->getTTL() * 60,
             'user' => auth()->user(),
+            'employee' => $employee,
             'status' => 'success',
             'status_code' => 200,
         ]);
