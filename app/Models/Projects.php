@@ -17,8 +17,16 @@ class Projects extends Model
         'team_name',
         'team_leader',
         'client',
+        'amount',
+        'taken_by',
         'Department',
         'priority'
+    ];
+
+
+    protected $casts = [
+    'team_leader' => 'array',
+    'taken_by'    => 'array',
     ];
 
     public function projectsincentives()
@@ -34,7 +42,14 @@ class Projects extends Model
 
     public function projectManager()
     {
-        return $this->belongsTo(Employee::class, 'project_manager')
+        return $this->belongsTo(employee::class, 'project_manager')
                     ->with('user');
     }
+
+    public function employees()
+    {
+        return $this->hasMany(ProjectHasEmployee::class, 'project_id')
+                    ->with('employee.user');
+    }
+
 }

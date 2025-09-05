@@ -20,8 +20,8 @@ class EmployeeController extends Controller
         $employees->transform(function ($employee) {
             $employee->avatar =
                 $employee->user && $employee->user->image
-                    ? url("public/" . $employee->user->image)
-                    : null;
+                ? url("public/" . $employee->user->image)
+                : null;
             return $employee;
         });
 
@@ -209,8 +209,8 @@ class EmployeeController extends Controller
 
         $employee->avatar =
             $employee->user && $employee->user->image
-                ? url("public/" . $employee->user->image)
-                : null;
+            ? url("public/" . $employee->user->image)
+            : null;
 
         return response()->json(
             [
@@ -306,6 +306,7 @@ class EmployeeController extends Controller
         // Step 5: Update Employee
         $employee = $employee->update([
             "fname" => $request->fname,
+            "emplyeetype" => $request->emplyeetype,
             "lname" => $request->lname,
             "gender" => $request->gender,
             "nationalid" => $request->nationalid,
@@ -384,6 +385,18 @@ class EmployeeController extends Controller
         return response()->json([
             "departments" => $departments,
             "shifts" => $shifts,
+        ]);
+    }
+
+
+
+    //New users routes attributes
+    public function newusers()
+    {
+        $users = User::where('isActive', 0)->get();
+        return response()->json([
+            "message" => "new inactive users list",
+            "users" => $users
         ]);
     }
 }
