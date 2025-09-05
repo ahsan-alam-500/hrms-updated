@@ -12,13 +12,18 @@ use App\Http\Controllers\Api\HolidayController;
 use App\Http\Controllers\Api\LeaveController;
 use App\Http\Controllers\Api\NoticeController;
 use App\Http\Controllers\Api\PayrollController;
+use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\TeamController;
 use App\Http\Controllers\Api\TeamEmployeeController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Models\employee as Employee;
+use App\Http\Controllers\Api\TargetController;
+
 //====================================
 //Employee
 //----------------------------------
 use App\Http\Controllers\Api\employee\EmployeeDashboard;
+use App\Http\Controllers\Api\employee\MyProjectController;
 //====================================
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +32,7 @@ Route::prefix('v1')->group(function () {
 
     // Public Routes
     Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/emailverification', [AuthController::class, 'varifyemail']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
@@ -69,6 +75,8 @@ Route::prefix('v1')->group(function () {
         //============================================================================
         Route::apiResource('employees', EmployeeController::class);
         Route::get('employee/attributes',[EmployeeController::class,'employeeAttributes']);
+        Route::get('newusers',[EmployeeController::class,'newusers']);
+        Route::post('newusers/active',[EmployeeController::class,'newusersActiveOrDeactive']);
 
         //============================================================================
         // Attendance
@@ -110,17 +118,44 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('teams', TeamController::class);
 
         //============================================================================
+        //Projects
+        //============================================================================
+        Route::apiResource('projects', ProjectController::class);
+        Route::get('project/attributes', [ProjectController::class,'attributes']);
+        Route::get('project/groups', [ProjectController::class,'groupProject']);
+
+
+        //============================================================================
         //Teams and employee assign as member
         //============================================================================
         Route::apiResource('maketeams', TeamEmployeeController::class);
 
 
+
+        //============================================================================
+        //Manage Notifications
+        //============================================================================
+        Route::apiResource('notifications', NotificationController::class);
+
+        //============================================================================
+        //Targets and details for dashboard card
+        //============================================================================
+        Route::apiResource('targets', TargetController::class);
+
+
         //==============❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️===================
-        //Employee Dashboard and Other
-        //Employee Dashboard and Other
+        //Employee Dashboard related and Other
+        //Employee Dashboard related and Other
         //==============❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️===================
 
+        //personal Leaves and leave requests
         Route::apiResource('employeeleave',EmployeeDashboard::class);
+
+        //personal projects all
+        Route::apiResource('employeeproject',MyProjectController::class);
+
+        //personal projects group according to status
+        Route::get('employeeprojects/groups',[MyProjectController::class,'myProjectsGrouped']);
 
     });
 
