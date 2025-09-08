@@ -19,6 +19,8 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Models\employee as Employee;
 use App\Http\Controllers\Api\TargetController;
 
+use App\Http\Controllers\Api\ObjectionController;
+
 //====================================
 //Employee
 //----------------------------------
@@ -136,6 +138,8 @@ Route::prefix('v1')->group(function () {
         //Manage Notifications
         //============================================================================
         Route::apiResource('notifications', NotificationController::class);
+        Route::post('notification/{id}', [NotificationController::class, 'markread']);
+
 
         //============================================================================
         //Targets and details for dashboard card
@@ -160,10 +164,18 @@ Route::prefix('v1')->group(function () {
     });
 
 
+    // Objections Gallery
+    Route::apiResource('objections', ObjectionController::class);
+
+
 
     //============================================================================
     //Automation routes (Dont Touch)
     //============================================================================
+
+
+
+
 
     // Attendance taking from machiene
     Route::post('/local/attendance', [AttendanceController::class, 'bulkStore']);
