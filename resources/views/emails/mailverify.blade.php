@@ -2,11 +2,11 @@
 <html lang="en">
 
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <meta name="x-apple-disable-message-reformatting">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Password Reset OTP</title>
+    <meta name="x-apple-disable-message-reformatting">
+    <title>Email Verification OTP</title>
 
     <style type="text/css">
         body {
@@ -15,6 +15,7 @@
             -webkit-text-size-adjust: 100%;
             background-color: #f0f0f0;
             color: #000000;
+            font-family: 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         table,
@@ -59,20 +60,31 @@
                 overflow: hidden;
             }
         }
+
+        .otp-code {
+            display: inline-block;
+            padding: 14px 30px;
+            font-size: 22px;
+            font-weight: 700;
+            background-color: #eef4ff;
+            border: 2px dashed #4a90e2;
+            border-radius: 10px;
+            letter-spacing: 6px;
+            color: #4a90e2;
+            text-decoration: none;
+            user-select: all;
+        }
     </style>
 
     <!--[if !mso]><!-->
-    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet"
-        type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet" type="text/css">
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700&display=swap" rel="stylesheet"
         type="text/css">
     <!--<![endif]-->
 </head>
 
 <body>
-
-    <!-- Top Logo -->
-    <table class="u-row" bgcolor="#ffffff" cellpadding="0" cellspacing="0" style="margin-top:10px;margin-bottom:10px;">
+    <table class="u-row" bgcolor="#ffffff" cellpadding="0" cellspacing="0" style="margin-top:20px;margin-bottom:20px;">
         <tr>
             <td align="center" style="padding:20px;">
                 <img src="https://sardaritbd.com/wp-content/uploads/2023/10/Sardarit-logo-updated-1.png"
@@ -85,12 +97,11 @@
         <tr>
             <td align="center">
 
-                <!-- Banner -->
-                <table class="u-row" style="background: #a5b7f0;" cellpadding="0" cellspacing="0">
+                <!-- Header Banner -->
+                <table class="u-row" bgcolor="#4a90e2" cellpadding="0" cellspacing="0">
                     <tr>
-                        <td align="center" style="padding: 20px;">
-                            <img src="{{ asset('public/otpimage.png') }}" alt="{{ config('app.name') }} Banner"
-                                width="190">
+                        <td align="center" style="padding: 25px; font-size:22px; font-weight:700; color:#fff;">
+                            {{ config('app.name') }} Email Verification
                         </td>
                     </tr>
                 </table>
@@ -100,27 +111,29 @@
                     <tr>
                         <td style="padding: 30px 20px 10px; text-align:center;">
                             <h1
-                                style="margin:0; font-family:'Montserrat',sans-serif; font-size:22px; font-weight:700; color:#000;">
-                                Hi {{ $userName ?? 'User' }}, your one-time code is:
+                                style="margin:0; font-family:'Montserrat',sans-serif; font-size:20px; font-weight:700; color:#000;">
+                                Hi {{ $userName ?? 'User' }},
                             </h1>
                         </td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px; text-align:center;">
-                            <span
-                                style="display:inline-block; font-size:22px; color:#000; border:2px solid #000; padding:14px 30px; text-decoration:none; font-weight:700; letter-spacing:12px;">
-                                {{ $otpCode }}
-                            </span>
+                        <td
+                            style="padding: 10px 30px; text-align:center; font-family:Arial, Helvetica, sans-serif; font-size:16px; color:#444;">
+                            <p>Thank you for registering with us! Please verify your email address using the following
+                                OTP code:</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 20px; text-align:center;">
+                            <span class="otp-code">{{ $otpCode }}</span>
                         </td>
                     </tr>
                     <tr>
                         <td
-                            style="padding: 20px; text-align:center; font-family:Arial, Helvetica, sans-serif; font-size:14px; color:#444;">
-                            <p style="margin:0;">This code is valid for <strong>2 minutes</strong>. Please enter it to
-                                continue with your password reset.</p>
-                            <p style="margin:0;">If you did not request a password reset, you can safely ignore this
-                                email.</p>
-                            <p style="margin-top:20px;">Best regards,<br><strong>The {{ config('app.name') }} Custom dev
+                            style="padding: 10px 30px; text-align:center; font-family:Arial, Helvetica, sans-serif; font-size:14px; color:#444;">
+                            <p>This OTP is valid for <strong>2 minutes</strong>. If you did not sign up, please ignore
+                                this email.</p>
+                            <p style="margin-top:20px;">Best regards,<br><strong>The {{ config('app.name') }} Custom Dev
                                     Team</strong></p>
                         </td>
                     </tr>
@@ -128,7 +141,7 @@
 
                 <!-- Footer -->
                 <table class="u-row" bgcolor="#ffffff" cellpadding="0" cellspacing="0"
-                    style="margin-top:10px;margin-bottom:20px;">
+                    style="margin-top:20px;margin-bottom:20px;">
                     <tr>
                         <td
                             style="padding:20px; text-align:center; font-size:13px; color:#777777; font-family:Arial, sans-serif;">
