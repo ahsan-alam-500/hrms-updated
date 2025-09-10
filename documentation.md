@@ -19,7 +19,7 @@ This is the backend for a Human Resource Management System (HRMS). It is built w
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/hrms_backend_updated.git
+    git clone https://github.com/ahsan-alam-500/hrms-updated.git
     ```
 2.  **Install dependencies:**
     ```bash
