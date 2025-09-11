@@ -14,6 +14,7 @@ use App\Models\holiday as Holiday;
 use App\Models\WorkingShift as Shift;
 use App\Models\attendance as Attendance;
 use App\Models\Target;
+use App\Models\Meeting;
 use App\Models\Projects as Project;
 
 class DashboardController extends Controller
@@ -32,26 +33,26 @@ class DashboardController extends Controller
 
         // --- Holiday & Leave Stats for Today ---
         $personalHolidayEmployees = PersonalHoliday::whereDate('date', $today)
-                                    ->pluck('employee_id');
+            ->pluck('employee_id');
         $publicHolidayCount = Holiday::whereDate('date', $today)->count();
 
         $leaveEmployees = Leave::whereDate('start_date', '<=', $today)
-                               ->whereDate('end_date', '>=', $today)
-                               ->pluck('employee_id');
+            ->whereDate('end_date', '>=', $today)
+            ->pluck('employee_id');
 
         $attendanceEmployees = Attendance::whereDate('date', $today)
-                                         ->pluck('employee_id');
+            ->pluck('employee_id');
 
         // Merge leave + personal holiday + attendance (not absent)
         $notAbsent = $leaveEmployees
-                        ->merge($personalHolidayEmployees)
-                        ->merge($attendanceEmployees)
-                        ->unique();
+            ->merge($personalHolidayEmployees)
+            ->merge($attendanceEmployees)
+            ->unique();
 
         // Present employees today (exclude absent)
         $presentCount = Attendance::whereDate('date', $today)
-                          ->whereIn('status', ['Present', 'Late'])
-                          ->count();
+            ->whereIn('status', ['Present', 'Late'])
+            ->count();
 
         // Absent = all employees - notAbsent
         $absentCount = $allEmployeeIds->diff($notAbsent)->count();
@@ -71,21 +72,21 @@ class DashboardController extends Controller
 
         // Current month target
         $targetRecord = Target::where('month', $month)
-                              ->where('year', $year)
-                              ->first();
+            ->where('year', $year)
+            ->first();
 
         $target = $targetRecord ? (float)$targetRecord->target : 0;
 
         // Achieved today
         $achievedToday = Project::where('status', 'Delivered')
-                                ->whereDate('updated_at', $today)
-                                ->sum('amount');
+            ->whereDate('updated_at', $today)
+            ->sum('amount');
 
         // Achieved this month
         $achievedMonth = Project::where('status', 'Delivered')
-                                ->whereMonth('updated_at', $month)
-                                ->whereYear('updated_at', $year)
-                                ->sum('amount');
+            ->whereMonth('updated_at', $month)
+            ->whereYear('updated_at', $year)
+            ->sum('amount');
 
         $due = $target - $achievedMonth;
         $percentageAchieved = $target > 0 ? round(($achievedMonth / $target) * 100, 2) : 0;
@@ -101,13 +102,13 @@ class DashboardController extends Controller
 
         // Last month total
         $achievedLastMonth = Project::where('status', 'Delivered')
-                                    ->whereMonth('updated_at', $lastMonth)
-                                    ->whereYear('updated_at', $lastMonthYear)
-                                    ->sum('amount');
+            ->whereMonth('updated_at', $lastMonth)
+            ->whereYear('updated_at', $lastMonthYear)
+            ->sum('amount');
 
         //Last month revenew this day
 
-        $lastIncomeThisDay = round($achievedLastMonth / $daysInLastMonth,2);
+        $lastIncomeThisDay = round($achievedLastMonth / $daysInLastMonth, 2);
 
         // Last month average up to this day
         $averageTillTodayLastMonth = $daysInLastMonth > 0
@@ -127,9 +128,9 @@ class DashboardController extends Controller
 
         for ($m = 1; $m <= 12; $m++) {
             $achieved = Project::where('status', 'Delivered')
-                                ->whereMonth('updated_at', $m)
-                                ->whereYear('updated_at', $year)
-                                ->sum('amount');
+                ->whereMonth('updated_at', $m)
+                ->whereYear('updated_at', $year)
+                ->sum('amount');
 
             $monthlySales[] = [
                 'month' => Carbon::create()->month($m)->format('F'),
@@ -140,35 +141,62 @@ class DashboardController extends Controller
 
         // Monthly sales vs operation statistics
 
-            $year = Carbon::now()->year;
-            $monthlyStats = [];
+        $year = Carbon::now()->year;
+        $monthlyStats = [];
 
-            for ($m = 1; $m <= 12; $m++) {
-                // All projects created in this month
-                $projects = Project::whereMonth('created_at', $m)
-                                   ->whereYear('created_at', $year)
-                                   ->get();
+        for ($m = 1; $m <= 12; $m++) {
+            // All projects created in this month
+            $projects = Project::whereMonth('created_at', $m)
+                ->whereYear('created_at', $year)
+                ->get();
 
-                $totalPlanneds = $projects->sum('amount');
-                $totalDelivereds = $projects->where('status', 'Delivered')->sum('amount');
-                $due = $totalPlanneds - $totalDelivereds;
-                $percentageAchieveds = $totalPlanneds > 0
-                    ? round(($totalDelivereds / $totalPlanneds) * 100, 2)
-                    : 0;
+            $totalPlanneds = $projects->sum('amount');
+            $totalDelivereds = $projects->where('status', 'Delivered')->sum('amount');
+            $due = $totalPlanneds - $totalDelivereds;
+            $percentageAchieveds = $totalPlanneds > 0
+                ? round(($totalDelivereds / $totalPlanneds) * 100, 2)
+                : 0;
 
-                $monthlyStats[] = [
-                    'month' => Carbon::create()->month($m)->format('F'),
-                    'total_projects' => $projects->count(),
-                    'sales' => $totalPlanneds,
-                    'revenue' => $totalDelivereds,
-                    'due' => $due > 0 ? $due : 0,
-                    'percentage_achieved' => $percentageAchieveds . '%'
-                ];
-            }
+            $monthlyStats[] = [
+                'month' => Carbon::create()->month($m)->format('F'),
+                'total_projects' => $projects->count(),
+                'sales' => $totalPlanneds,
+                'revenue' => $totalDelivereds,
+                'due' => $due > 0 ? $due : 0,
+                'percentage_achieved' => $percentageAchieveds . '%'
+            ];
+        }
 
 
-    //Absent last day
-    $absentLastDay = Attendance::where('status','Absent')->get();
+        //Absent last day
+        $lastWorkDay = Attendance::max('date');
+
+        $absentLastDay = [];
+        if ($lastWorkDay) {
+            $absentLastDay = Attendance::with(['employee.user'])
+                ->where('status', 'Absent')
+                ->whereDate('date', $lastWorkDay)
+                ->get()
+                ->map(function ($attendance) {
+                    return [
+                        'employee_id' => $attendance->employee->id ?? null,
+                        'employee_name' => $attendance->employee->fname . " " . $attendance->employee->lname ?? null,
+                        'status' => $attendance->status,
+                        'image' => url('public/' . $attendance->employee->user->image) ?? null,
+                        'date' => $attendance->date,
+                    ];
+                });
+        }
+
+        // meetings
+
+        $today = now()->toDateString();
+
+        $upcomingMeetings = Meeting::with('user')
+            ->whereDate('time', '>=', $today)
+            ->orderBy('time', 'asc')
+            ->get();
+
 
 
         // --- Response ---
@@ -181,19 +209,20 @@ class DashboardController extends Controller
             "shifts"         => $shifts,
             "department"     => $department,
             "leaveToday"     => $leaveToday,
-                    "target_card"  => [
-                    'Target' => $target,
-                    'achieved_today' => $achievedToday,
-                    'achieved_this_month' => $achievedMonth,
-                    'due' => $due > 0 ? $due : 0,
-                    'percentage_achieved' => round($percentageAchieved,2),
-                    'comparison' => ceil($comparisonPercent > 0 ? "+".$comparisonPercent : $comparisonPercent )." %",
-                    'achieved_last_month'=>$achievedLastMonth,
-                    'lastIncomeThisDay'=>round($lastIncomeThisDay,2)
-                    ],
+            "target_card"  => [
+                'Target' => $target,
+                'achieved_today' => $achievedToday,
+                'achieved_this_month' => $achievedMonth,
+                'due' => $due > 0 ? $due : 0,
+                'percentage_achieved' => round($percentageAchieved, 2),
+                'comparison' => ceil($comparisonPercent > 0 ? "+" . $comparisonPercent : $comparisonPercent) . " %",
+                'achieved_last_month' => $achievedLastMonth,
+                'lastIncomeThisDay' => round($lastIncomeThisDay, 2)
+            ],
             'monthly_sales' => $monthlySales,
             'monthly_statistics' => $monthlyStats,
-            'absent_last_day'=>$absentLastDay
+            'absent_last_day' => $absentLastDay,
+            'upcoming_meetings' => $upcomingMeetings
         ]);
     }
 }
