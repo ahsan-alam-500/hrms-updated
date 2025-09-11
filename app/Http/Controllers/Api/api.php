@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\TeamController;
 use App\Http\Controllers\Api\TeamEmployeeController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\MeetingController;
 use App\Models\employee as Employee;
 use App\Http\Controllers\Api\TargetController;
 
@@ -114,6 +115,12 @@ Route::prefix('v1')->group(function () {
         //============================================================================
         Route::apiResource('notice', NoticeController::class);
 
+
+        //============================================================================
+        //Meeting
+        //============================================================================
+        Route::apiResource('meetings', MeetingController::class);
+
         //============================================================================
         //Teams
         //============================================================================
@@ -125,6 +132,15 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('projects', ProjectController::class);
         Route::get('project/attributes', [ProjectController::class, 'attributes']);
         Route::get('project/groups', [ProjectController::class, 'groupProject']);
+
+        //person not in any project
+        Route::get('project/person/unassigned', [ProjectController::class, 'notAssigned']);
+
+        //============================================================================
+        //targets
+        //============================================================================
+        Route::apiResource('targets', TargetController::class);
+
 
 
         //============================================================================
@@ -198,4 +214,56 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::post('activate/{$id}', [ActivationController::class, 'activate']);
+
+    Route::post('get/from/machine', function (Request $request) {
+        $machineData = $request->all(); // The JSON you pasted
+
+        $created = [];
+        $skipped = [];
+
+        foreach ($machineData as $machineUser) {
+            // Extract values
+            $userid = $machineUser["userid"];
+            $name   = trim($machineUser["name"]);
+            $email  = strtolower(str_replace(" ", ".", $name)) . "@example.com"; // generate dummy email if missing
+            $password = $machineUser["password"] ?: "123456"; // fallback password
+
+            // Check if already exists by userid or email
+            $existingEmployee = Employee::where("eid", $userid)->first();
+
+            if ($existingEmployee) {
+                $skipped[] = $userid;
+                continue;
+            }
+
+            // Create user
+            $user = User::create([
+                "name" => $name,
+                "email" => $email,
+                "password" => bcrypt($password),
+                "image" => null,
+            ]);
+
+            // Create employee
+            $employee = Employee::create([
+                "user_id" => $user->id,
+                "eid" => $userid, // mapping machine userid
+                "fname" => explode(" ", $name)[0],
+                "lname" => explode(" ", $name)[1] ?? "",
+                "email" => $email,
+                "phone" => null,
+                "salary" => 0,
+                "status" => "active",
+            ]);
+
+            $created[] = $userid;
+        }
+
+        return response()->json([
+            "message" => "Import finished",
+            "created" => $created,
+            "skipped" => $skipped,
+            "total"   => count($machineData)
+        ]);
+    });
 });
