@@ -10,12 +10,19 @@ use App\Models\WorkingShift;
 use App\Models\EmployeeHasShift;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
 
 class EmployeeController extends Controller
 {
+
+    //===========================================================
+    //============== Get All Employees ==========================
+    //===========================================================
     public function index()
     {
-        $employees = Employee::with("department", "user")->get();
+        $employees = Employee::with("department", "user")
+            ->orderBy("id", "desc")
+            ->get();
 
         $employees->transform(function ($employee) {
             $employee->avatar =
@@ -30,38 +37,17 @@ class EmployeeController extends Controller
         ]);
     }
 
-    // public function index()
-    // {
-    //     $employees = Employee::with('department', 'user', 'employeeHasShift')->get();
 
-    //     $employees->transform(function ($employee) {
-    //         $employee->avatar = $employee->user && $employee->user->image
-    //             ? url('public/' . $employee->user->image)
-    //             : null;
-
-    //         // Map the pivot relation to shift details
-    //         $employee->shifts = $employee->employeeHasShift->map(function ($shift) {
-    //             return [
-    //                 'id' => $shift->id,
-    //                 'name' => $shift->name,
-    //                 'start_time' => $shift->start_time,
-    //                 'end_time' => $shift->end_time,
-    //             ];
-    //         });
-
-    //         unset($employee->employeeHasShift); // remove pivot if not needed
-
-    //         return $employee;
-    //     });
-
-    //     return response()->json([
-    //         'employees' => $employees
-    //     ]);
-    // }
+    //===========================================================
+    //============== Store New Employee =========================
+    // Handles:
+    //  - User creation (if not exists)
+    //  - Image upload (file, base64, URL)
+    //  - Employee creation linked to User
+    //===========================================================
 
     public function store(Request $request)
     {
-
         // Step 1: Validate fields
         $validator = Validator::make($request->all(), [
             "fname" => "required|string|max:255",
@@ -145,6 +131,8 @@ class EmployeeController extends Controller
             }
 
             $user = User::create([
+                "fname" => $request->fname,
+                "lname" => $request->lname,
                 "name" => $request->fname . " " . $request->lname,
                 "email" => $request->email,
                 "image" => $imagePath,
@@ -195,13 +183,13 @@ class EmployeeController extends Controller
         );
     }
 
-    // GET /employees/{id}
+    //===========================================================
+    //============== Get Single Employee ========================
+    // Route: GET /employees/{id}
+    //===========================================================
     public function show($id)
     {
-        $employee = Employee::with(
-            "department",
-            "user"
-        )->find($id);
+        $employee = Employee::with("department", "user")->find($id);
 
         if (!$employee) {
             return response()->json(["message" => "Employee not found"], 404);
@@ -221,7 +209,13 @@ class EmployeeController extends Controller
         );
     }
 
-    // PUT/PATCH /employees/{id}
+    //===========================================================
+    //========== Update Employee & User Together ================
+    // Handles:
+    //  - User update (name, email, password, image)
+    //  - Employee update (profile, department, salary, etc.)
+    //===========================================================
+
     public function update(Request $request, $id)
     {
         // Step 1: Validate fields
@@ -232,7 +226,7 @@ class EmployeeController extends Controller
             "password" => "nullable|min:6",
             "department_id" => "nullable|exists:departments,id",
             "emplyeetype" => "nullable|string",
-            "role" => "required|string",
+            "role" => "nullable|string",
             "dob" => "nullable",
             "salary" => "nullable|numeric|min:0",
             "image" => "nullable|file|mimes:jpg,jpeg,webp,png",
@@ -294,6 +288,8 @@ class EmployeeController extends Controller
 
         // Step 4: Update User
         $user->update([
+            "lname" => $request->lname,
+            "fname" => $request->fname,
             "name" => $request->fname . " " . $request->lname,
             "email" => $request->email,
             "role" => $request->role,
@@ -306,8 +302,8 @@ class EmployeeController extends Controller
         // Step 5: Update Employee
         $employee = $employee->update([
             "fname" => $request->fname,
-            "emplyeetype" => $request->emplyeetype,
             "lname" => $request->lname,
+            "emplyeetype" => $request->emplyeetype,
             "gender" => $request->gender,
             "nationalid" => $request->nationalid,
             "dob" => $request->dob,
@@ -341,7 +337,13 @@ class EmployeeController extends Controller
         );
     }
 
-    // DELETE /employees/{id}
+    //===========================================================
+    //============== Delete Employee & User =====================
+    // Deletes:
+    //  - Employee record
+    //  - Related User (optional)
+    //  - Image file (if exists)
+    //===========================================================
     public function destroy($id)
     {
         // Step 1: Find employee
@@ -377,6 +379,13 @@ class EmployeeController extends Controller
         );
     }
 
+
+    //===========================================================
+    //============== Get Employee Attributes ====================
+    // Returns:
+    //  - Department list
+    //  - Shift list
+    //===========================================================
     public function employeeAttributes()
     {
         $departments = Department::all();
@@ -388,15 +397,54 @@ class EmployeeController extends Controller
         ]);
     }
 
-
-
-    //New users routes attributes
+    //===========================================================
+    //============== New Users Management =======================
+    // - newusers(): List of users (not active but email verified)
+    // - newusersActiveOrDeactive(): Activate user OR delete user
+    //===========================================================
     public function newusers()
     {
-        $users = User::where('isActive', 0)->get();
-        return response()->json([
-            "message" => "new inactive users list",
-            "users" => $users
-        ]);
+        $users = User::where("isActive", 0)
+            ->where("is_email_varified", true)
+            ->get();
+        return response()->json($users);
+    }
+
+    public function newusersActiveOrDeactive(Request $request)
+    {
+        $user = User::where("id", $request->id)
+            ->where("is_email_varified", true)
+            ->latest()
+            ->first();
+
+        if ($request->isActive == 1) {
+            $user->update(["isActive" => 1]);
+
+            Employee::create([
+                "user_id" => $user->id,
+                "eid" => "SIT-" . substr(time() . rand(100, 999), -6),
+                "fname" => $user->fname,
+                "lname" => $user->lname,
+                "email" => $user->email,
+                "status" => "active",
+            ]);
+
+            Mail::send(
+                "emails.activation",
+                ["userName" => $user->fname],
+                function ($message) use ($user) {
+                    $message->to($user->email)->subject("Dashboard Activation");
+                }
+            );
+        } else {
+            $user->delete();
+        }
+
+        return response()->json(
+            [
+                "message" => "Action Completed",
+            ],
+            200
+        );
     }
 }
