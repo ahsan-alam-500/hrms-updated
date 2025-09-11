@@ -12,7 +12,8 @@ class ProjectHasEmployee extends Model
     protected $fillable = [
         'project_id',
         'team_leader',  // can store JSON if multiple leaders
-        'employee_id'
+        'employee_id',
+        'destribution'
     ];
 
     // Automatically cast team_leader as an array for easy access

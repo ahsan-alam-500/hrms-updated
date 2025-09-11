@@ -23,7 +23,7 @@ class ProjectController extends Controller
         $projects = Projects::with([
             "projectManager.user",
             "assignedEmployees.employee.user",
-        ])->get();
+        ])->orderBy('id', 'desc')->get();
 
         $projects = $projects->map(function ($project) {
             // --- Project Manager Avatar ---
@@ -38,20 +38,21 @@ class ProjectController extends Controller
                 'To-Do'        => 0,
                 'Under Review' => 25,
                 'In Progress'  => 50,
+                'On Hold'       => 20,
                 'Completed'    => 75,
                 'Delivered'    => 100,
             ];
-            $project->progress = $progressMap[$project->status] ?? 100;
+            $project->progress = $progressMap[$project->status] ?? 50;
 
             // --- Taken By (array of employees) ---
-          $takenByIds = $project->taken_by ?? [];
+            $takenByIds = $project->taken_by ?? [];
             $project->taken_by = !empty($takenByIds)
                 ? Employee::whereIn("id", $takenByIds)
-                    ->get()
-                    ->map(function ($emp) {
-                        return $emp->fname . " " . $emp->lname; // just return name as string
-                    })
-                    ->toArray()  // optional, to get plain array of names
+                ->get()
+                ->map(function ($emp) {
+                    return $emp->fname . " " . $emp->lname; // just return name as string
+                })
+                ->toArray()  // optional, to get plain array of names
                 : [];
 
 
@@ -59,14 +60,14 @@ class ProjectController extends Controller
             $teamLeaderIds = json_decode($project->team_leader, true) ?? [];
             $project->team_leaders = !empty($teamLeaderIds)
                 ? Employee::whereIn("id", $teamLeaderIds)
-                    ->with("user")
-                    ->get()
-                    ->map(function ($leader) {
-                        $leader->avatar = $leader->user
-                            ? url("public/" . $leader->user->image)
-                            : null;
-                        return $leader;
-                    })
+                ->with("user")
+                ->get()
+                ->map(function ($leader) {
+                    $leader->avatar = $leader->user
+                        ? url("public/" . $leader->user->image)
+                        : null;
+                    return $leader;
+                })
                 : [];
 
             // --- Assigned Employees Avatars ---
@@ -121,6 +122,7 @@ class ProjectController extends Controller
                 'To-Do'        => 0,
                 'Under Review' => 25,
                 'In Progress'  => 50,
+                'On Hold'  => 20,
                 'Completed'    => 75,
                 'Delivered'    => 100,
             ];
@@ -133,9 +135,9 @@ class ProjectController extends Controller
             }
             $project->taken_by = !empty($takenByIds)
                 ? Employee::whereIn("id", $takenByIds)
-                    ->get()
-                    ->map(fn($emp) => $emp->fname . " " . $emp->lname)
-                    ->toArray()
+                ->get()
+                ->map(fn($emp) => $emp->fname . " " . $emp->lname)
+                ->toArray()
                 : [];
 
             // --- Team Leaders ---
@@ -145,14 +147,14 @@ class ProjectController extends Controller
             }
             $project->team_leaders = !empty($teamLeaderIds)
                 ? Employee::whereIn("id", $teamLeaderIds)
-                    ->with("user")
-                    ->get()
-                    ->map(function ($leader) {
-                        $leader->avatar = $leader->user
-                            ? url("public/" . $leader->user->image)
-                            : null;
-                        return $leader;
-                    })
+                ->with("user")
+                ->get()
+                ->map(function ($leader) {
+                    $leader->avatar = $leader->user
+                        ? url("public/" . $leader->user->image)
+                        : null;
+                    return $leader;
+                })
                 : [];
 
             // --- Assigned Employees Avatars ---
@@ -167,7 +169,7 @@ class ProjectController extends Controller
 
             // --- Group by status ---
             $status = $project->status;
-            if (in_array($status, ['To-Do','Cancelled','Under Review','Completed','Delivered'])) {
+            if (in_array($status, ['To-Do', 'Cancelled', 'Under Review', 'Completed', 'Delivered'])) {
                 $grouped[$status][] = $project;
             } else {
                 $grouped['Active'][] = $project;
@@ -176,9 +178,6 @@ class ProjectController extends Controller
 
         return response()->json($grouped);
     }
-
-
-
 
 
     //=========================================================================
@@ -190,7 +189,7 @@ class ProjectController extends Controller
         $project = Projects::with([
             "projectManager.user",
             "assignedEmployees.employee.user",
-        ])->find($id);
+        ])->orderBy('id', 'desc')->find($id);
 
         if (!$project) {
             return response()->json(["message" => "Project not found"], 404);
@@ -207,25 +206,25 @@ class ProjectController extends Controller
         $teamLeaderIds = json_decode($project->team_leader, true) ?? [];
         $project->team_leaders = !empty($teamLeaderIds)
             ? Employee::whereIn("id", $teamLeaderIds)
-                ->with("user")
-                ->get()
-                ->map(function ($leader) {
-                    $leader->avatar = $leader->user
-                        ? url("public/" . $leader->user->image)
-                        : null;
-                    return $leader;
-                })
+            ->with("user")
+            ->get()
+            ->map(function ($leader) {
+                $leader->avatar = $leader->user
+                    ? url("public/" . $leader->user->image)
+                    : null;
+                return $leader;
+            })
             : [];
 
         // --- Taken By (array of employees) ---
         $takenByIds = $project->taken_by ?? [];
         $project->taken_by = !empty($takenByIds)
             ? Employee::whereIn("id", $takenByIds)
-                ->get()
-                ->map(function ($emp) {
-                    return $emp->fname . " " . $emp->lname; // just return name as string
-                })
-                ->toArray()  // optional, to get plain array of names
+            ->get()
+            ->map(function ($emp) {
+                return $emp->fname . " " . $emp->lname; // just return name as string
+            })
+            ->toArray()  // optional, to get plain array of names
             : [];
 
 
@@ -233,6 +232,7 @@ class ProjectController extends Controller
         $project->employees = $project->assignedEmployees->map(function ($emp) {
             if ($emp->employee && $emp->employee->user) {
                 $emp->employee->avatar = url("public/" . $emp->employee->user->image);
+                $emp->employee->destribution =  $emp->destribution;
             }
             return $emp->employee;
         });
@@ -243,9 +243,9 @@ class ProjectController extends Controller
     }
 
 
-        //========================================================================
-        //Create New Project and assign employees to developer,leader and project manager
-        //========================================================================
+    //========================================================================
+    //Create New Project and assign employees to developer,leader and project manager
+    //========================================================================
 
 
     public function store(Request $request)
@@ -275,7 +275,7 @@ class ProjectController extends Controller
             "description"    => $validated["description"] ?? null,
             "start_date"     => $validated["start_date"],
             "end_date"       => $validated["end_date"] ?? null,
-            "project_manager"=> $validated["employee_id"],
+            "project_manager" => $validated["employee_id"],
             "team_name"      => $validated["team_name"] ?? null,
             "team_leader"    => json_encode($validated["team_leader"]),
             "client"         => $validated["client_name"] ?? null,
@@ -288,28 +288,28 @@ class ProjectController extends Controller
 
         $project = Projects::create($projectData);
 
+        $workPersonAvg = ($project->amount / count($validated["assign_employee"]));
+
         foreach ($validated["assign_employee"] as $employeeId) {
             ProjectHasEmployee::create([
                 "project_id"  => $project->id,
                 "employee_id" => $employeeId,
+                "destribution" => $workPersonAvg
             ]);
+
+
 
             // set notification
             $notification = Notification::create([
-            "action" => "Assigned to a project  - " . $validated["project_name"]
-             ]);
+                "action" => "Assigned to a project  - " . $validated["project_name"]
+            ]);
             EmployeeHasNotification::create([
                 "employee_id"    => $employeeId,
-                "notification_id"=> $notification->id,
-                "type"=> "project",
-                "is_open"        => false // default unread
+                "notification_id" => $notification->id,
+                "type" => "project",
+                "is_open"        => false
             ]);
         }
-
-
-
-
-
 
 
         return response()->json([
@@ -324,6 +324,62 @@ class ProjectController extends Controller
     //========================================================================
     //Updating individual record
     //========================================================================
+    // public function update(Request $request, $id)
+    // {
+    //     $validated = $request->validate([
+    //         "project_name" => "required|string|max:255",
+    //         "description" => "nullable|string",
+    //         "start_date" => "required|date",
+    //         "end_date" => "nullable|date|after_or_equal:start_date",
+    //         // "employee_id" => "nullable|integer|exists:employees,id", // project manager
+    //         "team_name" => "nullable|string|max:255",
+    //         "team_leader" => "nullable|array", // array of employee IDs
+    //         "team_leader.*" => "exists:employees,id",
+    //         "client_name" => "nullable|string|max:255",
+    //         "status" => "nullable|string",
+    //         "priority" => "nullable|string",
+    //         "Department" => "nullable|integer",
+    //         "assign_employee" => "required|array",
+    //         "assign_employee.*" => "exists:employees,id",
+    //     ]);
+
+    //     $project = Projects::findOrFail($id);
+
+    //     // Map fields like store method
+    //     $projectData = [
+    //         "name" => $validated["project_name"],
+    //         "description" => $validated["description"] ?? $project->description,
+    //         "start_date" => $validated["start_date"],
+    //         "end_date" => $validated["end_date"] ?? $project->end_date,
+    //         // "project_manager" => $validated["employee_id"],
+    //         "team_name" => $validated["team_name"] ?? $project->team_name,
+    //         "team_leader" => isset($validated["team_leader"]) ? json_encode($validated["team_leader"]) : $project->team_leader,
+    //         "client" => $validated["client_name"] ?? $project->client,
+    //         "status" => $validated["status"] ?? $project->status,
+    //         "priority" => $validated["priority"] ?? $project->priority,
+    //         "Department" => $validated["Department"] ?? $project->Department,
+    //     ];
+
+    //     $project->update($projectData);
+
+    //     // Sync assigned employees
+    //     ProjectHasEmployee::where("project_id", $project->id)->delete();
+    //     foreach ($validated["assign_employee"] as  $index => $employeeId) {
+    //         ProjectHasEmployee::create([
+    //             "project_id" => $project->id,
+    //             "employee_id" => $employeeId,
+    //             "distribution" => $validated["distribution"][$index] ?? null,
+    //         ]);
+    //     }
+
+    //     //prottek employeeid er jonno ekta kore distribution add korbo (employee id er sathe distribution value array asbe) na thakle zero
+
+    //     return response()->json([
+    //         "message" => "Project updated successfully",
+    //         "data" => $project->load("employees"), // Ensure relation exists
+    //     ]);
+    // }
+
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
@@ -331,9 +387,8 @@ class ProjectController extends Controller
             "description" => "nullable|string",
             "start_date" => "required|date",
             "end_date" => "nullable|date|after_or_equal:start_date",
-            // "employee_id" => "nullable|integer|exists:employees,id", // project manager
             "team_name" => "nullable|string|max:255",
-            "team_leader" => "nullable|array", // array of employee IDs
+            "team_leader" => "nullable|array",
             "team_leader.*" => "exists:employees,id",
             "client_name" => "nullable|string|max:255",
             "status" => "nullable|string",
@@ -341,17 +396,17 @@ class ProjectController extends Controller
             "Department" => "nullable|integer",
             "assign_employee" => "required|array",
             "assign_employee.*" => "exists:employees,id",
+            "distribution" => "nullable|array",
         ]);
 
         $project = Projects::findOrFail($id);
 
-        // Map fields like store method
+        // Update project data
         $projectData = [
             "name" => $validated["project_name"],
             "description" => $validated["description"] ?? $project->description,
             "start_date" => $validated["start_date"],
             "end_date" => $validated["end_date"] ?? $project->end_date,
-            // "project_manager" => $validated["employee_id"],
             "team_name" => $validated["team_name"] ?? $project->team_name,
             "team_leader" => isset($validated["team_leader"]) ? json_encode($validated["team_leader"]) : $project->team_leader,
             "client" => $validated["client_name"] ?? $project->client,
@@ -362,20 +417,30 @@ class ProjectController extends Controller
 
         $project->update($projectData);
 
-        // Sync assigned employees
-        ProjectHasEmployee::where("project_id", $project->id)->delete();
-        foreach ($validated["assign_employee"] as $employeeId) {
-            ProjectHasEmployee::create([
-                "project_id" => $project->id,
-                "employee_id" => $employeeId,
-            ]);
+        // Sync assigned employees with distribution
+        foreach ($validated["assign_employee"] as $index => $employeeId) {
+            $existing = ProjectHasEmployee::where('project_id', $project->id)
+                ->where('employee_id', $employeeId)
+                ->first();
+
+            ProjectHasEmployee::updateOrCreate(
+                [
+                    'project_id' => $project->id,
+                    'employee_id' => $employeeId
+                ],
+                [
+                    'distribution' => $validated["distribution"][$index]
+                        ?? ($existing->distribution ?? 0)
+                ]
+            );
         }
 
         return response()->json([
             "message" => "Project updated successfully",
-            "data" => $project->load("employees"), // Ensure relation exists
+            "data" => $project->load(["employees", "assignedEmployees.employee.user"])
         ]);
     }
+
 
 
     //========================================================================
@@ -419,12 +484,11 @@ class ProjectController extends Controller
             ->get()
             ->map(function ($emp) {
                 if ($emp->user) {
-                 $emp->avatar = $emp->user && $emp->user->image
-                    ? url('public/'.$emp->user->image)
-                    : url("default-avatar.png");
-
+                    $emp->avatar = $emp->user && $emp->user->image
+                        ? url('public/' . $emp->user->image)
+                        : "";
                 }
-                 $emp->shift = $emp->workshift ?? "Not Assigned";
+                $emp->shift = $emp->workshift ?? "Not Assigned";
 
                 return $emp;
             });

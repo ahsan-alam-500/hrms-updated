@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -25,8 +26,8 @@ class Projects extends Model
 
 
     protected $casts = [
-    'team_leader' => 'array',
-    'taken_by'    => 'array',
+        'team_leader' => 'array',
+        'taken_by'    => 'array',
     ];
 
     public function projectsincentives()
@@ -37,19 +38,18 @@ class Projects extends Model
     public function assignedEmployees()
     {
         return $this->hasMany(ProjectHasEmployee::class, 'project_id')
-                    ->with('employee.user');
+            ->with('employee.user');
     }
 
     public function projectManager()
     {
         return $this->belongsTo(employee::class, 'project_manager')
-                    ->with('user');
+            ->with('user');
     }
 
     public function employees()
     {
         return $this->hasMany(ProjectHasEmployee::class, 'project_id')
-                    ->with('employee.user');
+            ->with('employee.user');
     }
-
 }
