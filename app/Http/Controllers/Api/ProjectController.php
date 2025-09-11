@@ -217,15 +217,12 @@ class ProjectController extends Controller
             : [];
 
         // --- Taken By (array of employees) ---
+        // --- Taken By (array of employees) ---
         $takenByIds = $project->taken_by ?? [];
-        $project->taken_by = !empty($takenByIds)
-            ? Employee::whereIn("id", $takenByIds)
+
+        $project->taken_by = Employee::whereIn('id', $takenByIds)
             ->get()
-            ->map(function ($emp) {
-                return $emp->fname . " " . $emp->lname; // just return name as string
-            })
-            ->toArray()  // optional, to get plain array of names
-            : [];
+            ->toArray(); // collection -> array
 
 
         // --- Assigned Employees ---
@@ -324,61 +321,6 @@ class ProjectController extends Controller
     //========================================================================
     //Updating individual record
     //========================================================================
-    // public function update(Request $request, $id)
-    // {
-    //     $validated = $request->validate([
-    //         "project_name" => "required|string|max:255",
-    //         "description" => "nullable|string",
-    //         "start_date" => "required|date",
-    //         "end_date" => "nullable|date|after_or_equal:start_date",
-    //         // "employee_id" => "nullable|integer|exists:employees,id", // project manager
-    //         "team_name" => "nullable|string|max:255",
-    //         "team_leader" => "nullable|array", // array of employee IDs
-    //         "team_leader.*" => "exists:employees,id",
-    //         "client_name" => "nullable|string|max:255",
-    //         "status" => "nullable|string",
-    //         "priority" => "nullable|string",
-    //         "Department" => "nullable|integer",
-    //         "assign_employee" => "required|array",
-    //         "assign_employee.*" => "exists:employees,id",
-    //     ]);
-
-    //     $project = Projects::findOrFail($id);
-
-    //     // Map fields like store method
-    //     $projectData = [
-    //         "name" => $validated["project_name"],
-    //         "description" => $validated["description"] ?? $project->description,
-    //         "start_date" => $validated["start_date"],
-    //         "end_date" => $validated["end_date"] ?? $project->end_date,
-    //         // "project_manager" => $validated["employee_id"],
-    //         "team_name" => $validated["team_name"] ?? $project->team_name,
-    //         "team_leader" => isset($validated["team_leader"]) ? json_encode($validated["team_leader"]) : $project->team_leader,
-    //         "client" => $validated["client_name"] ?? $project->client,
-    //         "status" => $validated["status"] ?? $project->status,
-    //         "priority" => $validated["priority"] ?? $project->priority,
-    //         "Department" => $validated["Department"] ?? $project->Department,
-    //     ];
-
-    //     $project->update($projectData);
-
-    //     // Sync assigned employees
-    //     ProjectHasEmployee::where("project_id", $project->id)->delete();
-    //     foreach ($validated["assign_employee"] as  $index => $employeeId) {
-    //         ProjectHasEmployee::create([
-    //             "project_id" => $project->id,
-    //             "employee_id" => $employeeId,
-    //             "distribution" => $validated["distribution"][$index] ?? null,
-    //         ]);
-    //     }
-
-    //     //prottek employeeid er jonno ekta kore distribution add korbo (employee id er sathe distribution value array asbe) na thakle zero
-
-    //     return response()->json([
-    //         "message" => "Project updated successfully",
-    //         "data" => $project->load("employees"), // Ensure relation exists
-    //     ]);
-    // }
 
     public function update(Request $request, $id)
     {
