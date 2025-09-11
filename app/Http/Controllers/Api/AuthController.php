@@ -11,26 +11,33 @@ use Illuminate\Support\Facades\Mail;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Validation\ValidationException;
 use Intervention\Image\Facades\Image;
+use App\Models\Notification;
+use App\Models\EmployeeHasNotification;
 
 class AuthController extends Controller
 {
+
+    //========================================================
+    //================= Register new user ====================
+    //========================================================
+
     public function register(Request $request)
     {
 
-        if($request->fname){
-        $request->validate([
-            'fname' => 'required|string|max:255',
-            'lname' => 'required|string|max:255',
-            'email' => 'required|email',
-            'password' => 'required|min:6'
-        ]);
-        }else{
+        if ($request->fname) {
             $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6',
-            'image' => 'nullable|image',
-        ]);
+                'fname' => 'required|string|max:255',
+                'lname' => 'required|string|max:255',
+                'email' => 'required|email',
+                'password' => 'required|min:6'
+            ]);
+        } else {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|min:6',
+                'image' => 'nullable|image',
+            ]);
         }
 
         if ($request->hasFile('image')) {
@@ -42,39 +49,43 @@ class AuthController extends Controller
             })->save($path);
         }
 
-    $otp = rand(111111,999999);
+        $otp = rand(111111, 999999);
 
-    if($request->fname){
-        $user = User::updateOrCreate(
-            ['email' => $request->email],
-            [
-                'name' => $request->fname ." ".$request->lname,
-                'email_varified_otp' => $otp,
-                'isAggree' => $request->isAggree,
-                'password' => bcrypt($request->password),
-            ]
-        );
+        if ($request->fname) {
+            $user = User::updateOrCreate(
+                ['email' => $request->email],
+                [
+                    'fname' => $request->fname,
+                    'lname' => $request->lname,
+                    'name' => $request->fname . " " . $request->lname,
+                    'email_varified_otp' => $otp,
+                    'isAggree' => $request->isAggree,
+                    'password' => bcrypt($request->password),
+                ]
+            );
 
 
-        Mail::send('emails.mailverify', ['userName' => $user->fname, 'otpCode' => $otp], function ($message) use ($user) {
-            $message->to($user->email)
-                ->subject('Email varification OTP');
-        });
+            Mail::send('emails.mailverify', ['userName' => $user->fname, 'otpCode' => $otp], function ($message) use ($user) {
+                $message->to($user->email)
+                    ->subject('Email varification OTP');
+            });
 
-        return response()->json(['message' => 'Otp Send to Your email ', 'user' => $user]);
-    }else{
+            return response()->json(['message' => 'Otp Send to Your email ', 'user' => $user]);
+        } else {
             $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'image' => $request->image ? config('app.url') . '/images/' . $filename : null,
-            'password' => bcrypt($request->password),
-        ]);
-        return response()->json(['message' => 'User registered successfully ', 'user' => $user]);
+                'name' => $request->name,
+                'email' => $request->email,
+                'image' => $request->image ? config('app.url') . '/images/' . $filename : null,
+                'password' => bcrypt($request->password),
+            ]);
+            return response()->json(['message' => 'User registered successfully ', 'user' => $user]);
+        }
     }
-    }
 
 
-
+    //========================================================
+    //================= Email varification ===================
+    //========================================================
     public function varifyemail(Request $request)
     {
         $user = User::where('email', $request->email)->first();
@@ -84,6 +95,27 @@ class AuthController extends Controller
                 'email_verified_at' => now(),
                 'is_email_varified' => true
             ]);
+
+
+
+            // notifications
+            $notification = Notification::create([
+                "action" => "New User waiting for approval - " . $user->name
+            ]);
+
+            $employees = employee::whereHas('user', function ($q) {
+                $q->where('role', 'Admin');
+            })->get();
+
+            foreach ($employees as $employee) {
+                EmployeeHasNotification::create([
+                    "employee_id"    => $employee->id,
+                    "notification_id" => $notification->id,
+                    "type"        => "register",
+                    "is_open"        => false // default unread
+                ]);
+            }
+            // notifications ends
 
             return response()->json([
                 "message" => "Otp verification successful",
@@ -95,9 +127,9 @@ class AuthController extends Controller
         ], 400);
     }
 
-
-
-
+    //========================================================
+    //================= Login as a user ======================
+    //========================================================
 
     public function login(Request $request)
     {
@@ -113,11 +145,11 @@ class AuthController extends Controller
             return response()->json(['error' => 'Invalid credentials'], 401);
         }
 
-        $employee = employee::where('user_id',$userExists->id)->latest()->first();
+        $employee = employee::where('user_id', $userExists->id)->latest()->first();
 
         return response()->json([
             'message' => 'Login successfully',
-            'avatar' => $employee->user->image ? url('public/'.$employee->user->image) : "",
+            'avatar' => $employee->user->image ? url('public/' . $employee->user->image) : "",
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => auth('api')->factory()->getTTL() * 60,
@@ -127,6 +159,10 @@ class AuthController extends Controller
             'status_code' => 200,
         ]);
     }
+
+    //========================================================
+    //================= Forget Password ======================
+    //========================================================
 
     public function forgetPassword(Request $request)
     {
@@ -157,6 +193,11 @@ class AuthController extends Controller
         ]);
     }
 
+
+    //=========================================================
+    //========== OTP validation for forget password ===========
+    //=========================================================
+
     public function optValidation(Request $request)
     {
         $request->validate([
@@ -176,6 +217,10 @@ class AuthController extends Controller
             'status_code' => 200,
         ]);
     }
+
+    //==========================================================
+    //========== Reset Password after otp validation ===========
+    //==========================================================
 
     public function resetPassword(Request $request)
     {
@@ -210,6 +255,10 @@ class AuthController extends Controller
     {
         return response()->json(auth()->user());
     }
+
+    //===========================================================
+    //========== Update only user info (Not Employee) ===========
+    //===========================================================
 
     public function updateProfile(Request $request)
     {
