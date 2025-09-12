@@ -1,0 +1,269 @@
+<?php
+
+use App\Http\Controllers\Api\AttendanceController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ShiftController;
+use App\Http\Controllers\Api\DepartmentController;
+use App\Http\Controllers\Api\DocumentController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\EmployeeController;
+use App\Http\Controllers\ActivationController;
+use App\Http\Controllers\Api\HolidayController;
+use App\Http\Controllers\Api\LeaveController;
+use App\Http\Controllers\Api\NoticeController;
+use App\Http\Controllers\Api\PayrollController;
+use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\TeamController;
+use App\Http\Controllers\Api\TeamEmployeeController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\MeetingController;
+use App\Models\employee as Employee;
+use App\Http\Controllers\Api\TargetController;
+
+use App\Http\Controllers\Api\ObjectionController;
+
+//====================================
+//Employee
+//----------------------------------
+use App\Http\Controllers\Api\employee\EmployeeDashboard;
+use App\Http\Controllers\Api\employee\MyProjectController;
+//====================================
+use Illuminate\Support\Facades\Route;
+
+
+Route::prefix('v1')->group(function () {
+
+    // Public Routes
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/emailverification', [AuthController::class, 'varifyemail']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    Route::post('/forgotpassword', [AuthController::class, 'forgetPassword']);
+    Route::post('/optvalidation', [AuthController::class, 'optValidation']);
+    Route::post('/resetpassword', [AuthController::class, 'resetPassword']);
+
+
+
+
+    // Protected Routes
+    Route::middleware('jwt.auth')->group(function () {
+
+        //============================================================================
+        // Auth
+        //============================================================================
+        Route::get('/profile', [AuthController::class, 'profile']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+
+
+        //============================================================================
+        //Admin Summery data
+        //============================================================================
+        Route::apiResource('admin/dashboard', DashboardController::class);
+
+        //============================================================================
+        // Department CRUD
+        //============================================================================
+        Route::apiResource('departments', DepartmentController::class);
+
+        //============================================================================
+        //Shift CRUD
+        //============================================================================
+        Route::apiResource('shifts', ShiftController::class);
+        Route::get('shift/assign', [ShiftController::class, 'AssignEmployeeToShiftPage']);
+        Route::put('shift/assign/{id}', [ShiftController::class, 'AssignEmployeeToShiftPost']);
+
+        //============================================================================
+        // Employee CRUD
+        //============================================================================
+        Route::apiResource('employees', EmployeeController::class);
+        Route::get('employee/attributes', [EmployeeController::class, 'employeeAttributes']);
+        Route::get('newusers', [EmployeeController::class, 'newusers']);
+        Route::post('newusers/active', [EmployeeController::class, 'newusersActiveOrDeactive']);
+
+        //============================================================================
+        // Attendance
+        //============================================================================
+        Route::apiResource('attendances', AttendanceController::class);
+        Route::post('/attendance/filter', [AttendanceController::class, 'attendanceFilter']);
+        Route::post('/attendance/filter/{id}', [AttendanceController::class, 'attendanceFilterPersonal']);
+        Route::get('/employee/attendance/{id}', [AttendanceController::class, 'employeeAttendance']);
+        Route::post('attendance/sync', [AttendanceController::class, 'attendanceSyncer']);
+
+        //============================================================================
+        // Leave
+        //============================================================================
+        Route::apiResource('leaves', LeaveController::class);
+
+        //============================================================================
+        // Salary
+        //============================================================================
+        Route::apiResource('payrolls', PayrollController::class);
+
+        //============================================================================
+        // Documents
+        //============================================================================
+        Route::apiResource('documents', DocumentController::class);
+
+        //============================================================================
+        //Holiday
+        //============================================================================
+        Route::apiResource('holiday', HolidayController::class);
+
+        //============================================================================
+        //Notice
+        //============================================================================
+        Route::apiResource('notice', NoticeController::class);
+
+
+        //============================================================================
+        //Meeting
+        //============================================================================
+        Route::apiResource('meetings', MeetingController::class);
+
+        //============================================================================
+        //Teams
+        //============================================================================
+        Route::apiResource('teams', TeamController::class);
+
+        //============================================================================
+        //Projects
+        //============================================================================
+        Route::apiResource('projects', ProjectController::class);
+        Route::get('project/attributes', [ProjectController::class, 'attributes']);
+        Route::get('project/groups', [ProjectController::class, 'groupProject']);
+
+        //person not in any project
+        Route::get('project/person/unassigned', [ProjectController::class, 'notAssigned']);
+
+        //============================================================================
+        //targets
+        //============================================================================
+        Route::apiResource('targets', TargetController::class);
+
+
+
+        //============================================================================
+        //Teams and employee assign as member
+        //============================================================================
+        Route::apiResource('maketeams', TeamEmployeeController::class);
+
+
+
+        //============================================================================
+        //Manage Notifications
+        //============================================================================
+        Route::apiResource('notifications', NotificationController::class);
+        Route::post('notification/{id}', [NotificationController::class, 'markread']);
+
+
+        //============================================================================
+        //Targets and details for dashboard card
+        //============================================================================
+        Route::apiResource('targets', TargetController::class);
+
+
+        //==============❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️===================
+        //Employee Dashboard related and Other
+        //Employee Dashboard related and Other
+        //==============❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️❇️===================
+
+        //personal Leaves and leave requests
+        Route::apiResource('employeeleave', EmployeeDashboard::class);
+
+        //personal projects all
+        Route::apiResource('employeeproject', MyProjectController::class);
+
+        //personal projects group according to status
+        Route::get('employeeprojects/groups', [MyProjectController::class, 'myProjectsGrouped']);
+    });
+
+
+    // Objections Gallery
+    Route::apiResource('objections', ObjectionController::class);
+
+
+
+    //============================================================================
+    //Automation routes (Dont Touch)
+    //============================================================================
+
+
+
+
+
+    // Attendance taking from machiene
+    Route::post('/local/attendance', [AttendanceController::class, 'bulkStore']);
+
+    //Setting Users to machien
+    Route::get('/local/set/users', function () {
+        $employees = Employee::all(); // fetch all employees
+
+        $result = $employees->map(function ($emp) {
+            return [
+                "uid" => (int) preg_replace('/\D/', '', $emp->eid),
+                "userId" => (int) $emp->id,
+                "name" => $emp->fname . " " . $emp->lname,
+                "role" => 0,
+                "password" => "",
+                "cardno" => "000000000"
+            ];
+        });
+
+        return response()->json($result);
+    });
+
+    Route::post('activate/{id}', [ActivationController::class, 'activate']);
+
+    Route::post('get/from/machine', function (Request $request) {
+        $machineData = $request->all(); // The JSON you pasted
+
+        $created = [];
+        $skipped = [];
+
+        foreach ($machineData as $machineUser) {
+            // Extract values
+            $userid = $machineUser["userid"];
+            $name   = trim($machineUser["name"]);
+            $email  = strtolower(str_replace(" ", ".", $name)) . "@example.com"; // generate dummy email if missing
+            $password = $machineUser["password"] ?: "123456"; // fallback password
+
+            // Check if already exists by userid or email
+            $existingEmployee = Employee::where("eid", $userid)->first();
+
+            if ($existingEmployee) {
+                $skipped[] = $userid;
+                continue;
+            }
+
+            // Create user
+            $user = User::create([
+                "name" => $name,
+                "email" => $email,
+                "password" => bcrypt($password),
+                "image" => null,
+            ]);
+
+            // Create employee
+            $employee = Employee::create([
+                "user_id" => $user->id,
+                "eid" => $userid, // mapping machine userid
+                "fname" => explode(" ", $name)[0],
+                "lname" => explode(" ", $name)[1] ?? "",
+                "email" => $email,
+                "phone" => null,
+                "salary" => 0,
+                "status" => "active",
+            ]);
+
+            $created[] = $userid;
+        }
+
+        return response()->json([
+            "message" => "Import finished",
+            "created" => $created,
+            "skipped" => $skipped,
+            "total"   => count($machineData)
+        ]);
+    });
+});

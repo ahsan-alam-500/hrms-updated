@@ -14,12 +14,15 @@ class NotificationController extends Controller
     {
         $employeeId = $request->user()->employee->id;
 
+        //showing last 30 notification 
         $notifications = EmployeeHasNotification::with('notification')
             ->where('employee_id', $employeeId)
             ->orderBy('id', 'desc')
+            ->limit(30)
             ->get();
+            
         $unread = EmployeeHasNotification::with('notification')
-            ->where('employee_id', $employeeId)->where('is_open', 0)
+            ->where('employee_id', $employeeId)->where('is_open',0)
             ->orderBy('id', 'desc')
             ->get();
 
@@ -37,17 +40,17 @@ class NotificationController extends Controller
         $pivot = EmployeeHasNotification::where('employee_id', $request->employee_id)
             ->where('id', $id)
             ->first();
-
+    
         if (!$pivot) {
             return response()->json(["message" => "Notification not found for this employee"], 404);
         }
-
+    
         // Mark as read only if not already read
         if (!$pivot->is_open) {
             $pivot->is_open = true;
             $pivot->save();
         }
-
+    
         return response()->json(["message" => "Notification marked as read"]);
     }
 

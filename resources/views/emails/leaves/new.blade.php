@@ -1,12 +1,12 @@
-<x-mail::message>
-# Introduction
+@component('mail::message')
+# New Leave Request
 
-The body of your message.
-
-<x-mail::button :url="''">
-Button Text
-</x-mail::button>
+Employee: {{ $leave->employee->name }}  
+Leave Type: {{ $leave->leave_type }}  
+From: {{ $leave->start_date }}  
+To: {{ $leave->end_date }}  
+Reason: {{ $leave->reason ?? 'N/A' }}
 
 Thanks,<br>
 {{ config('app.name') }}
-</x-mail::message>
+@endcomponent

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Mail;
 
 class EmployeeController extends Controller
 {
-
+    
     //===========================================================
     //============== Get All Employees ==========================
     //===========================================================
@@ -27,8 +27,8 @@ class EmployeeController extends Controller
         $employees->transform(function ($employee) {
             $employee->avatar =
                 $employee->user && $employee->user->image
-                ? url("public/" . $employee->user->image)
-                : null;
+                    ? url("public/" . $employee->user->image)
+                    : null;
             return $employee;
         });
 
@@ -45,7 +45,7 @@ class EmployeeController extends Controller
     //  - Image upload (file, base64, URL)
     //  - Employee creation linked to User
     //===========================================================
-
+    
     public function store(Request $request)
     {
         // Step 1: Validate fields
@@ -197,8 +197,8 @@ class EmployeeController extends Controller
 
         $employee->avatar =
             $employee->user && $employee->user->image
-            ? url("public/" . $employee->user->image)
-            : null;
+                ? url("public/" . $employee->user->image)
+                : null;
 
         return response()->json(
             [
@@ -215,7 +215,7 @@ class EmployeeController extends Controller
     //  - User update (name, email, password, image)
     //  - Employee update (profile, department, salary, etc.)
     //===========================================================
-
+    
     public function update(Request $request, $id)
     {
         // Step 1: Validate fields

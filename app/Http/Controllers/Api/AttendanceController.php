@@ -90,7 +90,7 @@ class AttendanceController extends Controller
                 "employee_eid" => $employee->eid,
                 "avatar" => $employee->user?->image
                     ? asset("public/" . $employee->user->image)
-                    : asset("default-avatar.png"),
+                    : "",
                 "employee_name" => trim(
                     $employee->fname . " " . $employee->lname
                 ),
@@ -318,10 +318,7 @@ class AttendanceController extends Controller
                 $in && $out ? max(0, $in->diffInMinutes($out) - 60) : 0;
 
             // ✅ Overtime hours (above standard minutes)
-            $overtime_hours =
-                $production_minutes > $standardMinutes
-                    ? floor(($production_minutes - $standardMinutes) / 60)
-                    : 0;
+        $overtime_hours = max($production_minutes - $standardMinutes, 0);
 
             // ✅ Late minutes
             $late_minutes =
@@ -494,8 +491,8 @@ class AttendanceController extends Controller
         // Use attendance shift if exists, fallback to employee current shift
         $shiftId = $employee->workshift; // If employee change shift then insert from update shift according the employee table
         $shift = WorkingShift::find($shiftId);
-
-
+        
+      
 
         if (!$shift) {
             // fallback default shift
@@ -524,7 +521,7 @@ class AttendanceController extends Controller
             $gracePeriod = (int) $shift->grace_time;
             $standardMinutes = (int) $shift->working_hours * 60;
         }
-
+        
 
         // check holidays
         $isHoliday = Holiday::where("date", $date)->exists();
@@ -562,9 +559,9 @@ class AttendanceController extends Controller
         } else {
             $status = $isHoliday || $isPersonalHoliday ? "Holiday" : "Absent";
         }
+        
 
-
-
+        
         // return 1;
 
         return $done = Attendance::updateOrCreate(
@@ -582,7 +579,7 @@ class AttendanceController extends Controller
                 "overtime_hours" => round($overtime_hours, 2),
             ]
         );
-
+        
     }
 
     function makePositive($value)

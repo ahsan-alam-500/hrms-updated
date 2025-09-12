@@ -35,7 +35,7 @@ class employee extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function department()
@@ -72,8 +72,47 @@ class employee extends Model
         return $this->hasMany(PersonalHoliday::class);
     }
 
-        public function workingshift()
+    public function workingshift() 
     {
     return $this->belongsTo(WorkingShift::class, 'workshift');
     }
+
+    public function project() 
+    {
+    return $this->hasMany(ProjectHasEmployee::class);
+    }
+    
+    public function shifts()
+    {
+        return $this->hasMany(EmployeeHasShift::class, 'employee_id');
+    }
+    
+    public function notifications()
+    {
+        return $this->belongsToMany(Notification::class, 'employee_has_notification', 'employee_id', 'notification_id')
+                    ->withPivot('is_open')
+                    ->withTimestamps();
+    }
+    
+    public function assignedProjects()
+    {
+        return $this->belongsToMany(
+            Projects::class, 
+            'project_has_employee',
+            'employee_id',          
+            'project_id'  
+        );
+    }
+    
+    public function meetings()
+    {
+        return $this->belongsToMany(
+            Meeting::class,
+            'meeting_has_employees',
+            'employee_id',
+            'meeting_id'
+        );
+    }
+
+
 }

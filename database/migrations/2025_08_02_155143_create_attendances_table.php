@@ -18,7 +18,6 @@ return new class extends Migration
             $table->enum('status', ['present', 'absent', 'late', 'leave'])->default('absent');
             $table->time('in_time')->nullable();
             $table->time('out_time')->nullable();
-            $table->decimal('overtime_hours', 10, 2)->default(0.00)->nullable();
             $table->timestamps();
         });
     }

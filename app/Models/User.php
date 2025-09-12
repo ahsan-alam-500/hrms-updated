@@ -30,9 +30,15 @@ class User extends Authenticatable implements JWTSubject
      * @var list<string>
      */
     protected $fillable = [
+        'fname',
+        'lname',
         'name',
         'email',
         'role',
+        'isAggree',
+        'isActive',
+        'email_varified_otp',
+        'is_email_varified',
         'image',
         'password',
     ];
@@ -50,6 +56,13 @@ class User extends Authenticatable implements JWTSubject
     protected $hidden = [
         'password',
         'remember_token',
+        'isAggree',
+        'isActive',
+        'email_varified_otp',
+        'email_verified_at',
+        'otp',
+        'otpValidated',
+        'm_user_id',
     ];
 
     /**

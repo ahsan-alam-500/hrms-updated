@@ -10,20 +10,20 @@ use Illuminate\Support\Facades\Validator;
 
 class TeamController extends Controller
 {
-    public function index()
+   public function index()
     {
         try {
             $teams = Team::with('teamEmployees.employee.user')->get();
-
+    
             $teams->transform(function ($team) {
                 // Fetch leader info
-                $leader = \App\Models\Employee::with('user')->find($team->team_leader);
+                $leader = Employee::with('user')->find($team->team_leader);
                 $team->team_leader = $leader ? [
                     'id' => $leader->id,
                     'name' => $leader->fname . ' ' . $leader->lname,
                     'avatar' => $leader->user ? url('public/' . $leader->user->image) : null
                 ] : null;
-
+    
                 // Map team_employees to just employees
                 $team->team_employees = $team->teamEmployees->map(function ($te) {
                     if (!$te->employee) return null;
@@ -31,17 +31,18 @@ class TeamController extends Controller
                     $employee->avatar = $employee->user ? url('public/' . $employee->user->image) : null;
                     return $employee;
                 })->filter(); // remove nulls
-
+    
                 // Remove old teamEmployees relationship
                 unset($team->teamEmployees);
-
+    
                 return $team;
             });
-
+    
             return response()->json([
                 'status' => 'success',
                 'teams' => $teams
             ]);
+    
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -50,8 +51,8 @@ class TeamController extends Controller
         }
     }
 
-
-
+    
+    
     //======================================================
     //New Team Creation
     //======================================================

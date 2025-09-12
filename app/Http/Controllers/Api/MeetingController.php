@@ -10,15 +10,19 @@ use App\Models\User;
 class MeetingController extends Controller
 {
     // 🔹 All meetings with creator user
-    public function index()
+    public function index(Request $request)
     {
         $today = now()->toDateString();
-
+        $employeeId = auth()->user()->employee->id;
+    
         $upcomingMeetings = Meeting::with('user')
+            ->whereHas('employees', function ($q) use ($employeeId) {
+                $q->where('employee_id', $employeeId);
+            })
             ->whereDate('time', '>=', $today)
             ->orderBy('time', 'asc')
             ->get();
-
+    
         return response()->json([
             "status"   => true,
             "meetings" => $upcomingMeetings

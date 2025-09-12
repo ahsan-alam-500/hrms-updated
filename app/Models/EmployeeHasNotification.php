@@ -11,6 +11,7 @@ class EmployeeHasNotification extends Model
     protected $fillable = [
         'employee_id',
         'notification_id',
+        'type',
         'is_open'
     ];
 

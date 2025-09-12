@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\Notice;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Notification;
+use App\Models\employee;
+use App\Models\EmployeeHasNotification;
 
 class NoticeController extends Controller
 {
@@ -14,8 +17,7 @@ class NoticeController extends Controller
      */
     public function index()
     {
-
-        $notices = Notice::all();
+        $notices = Notice::orderBy('id','desc')->get();
 
         return response()->json($notices, 200);
     }
@@ -26,9 +28,9 @@ class NoticeController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            "title"       => "required|string|max:255",
-            "description" => "nullable|string",
-            "status"      => "required|in:active,inactive"
+            "aName" => "required|string|max:255",
+            "dis" => "nullable|string",
+            "status" => "nullable|in:active,inactive"
         ]);
 
         if ($validator->fails()) {
@@ -37,11 +39,32 @@ class NoticeController extends Controller
             ], 422);
         }
 
-        $notice = Notice::create($validator->validated());
+        $notice = Notice::create([
+            "title" => $request->aName,
+            "description" => $request->dis,
+            "status" => $request->status ?? 'inactive' // optional default
+        ]);
+        
+        $notification = Notification::create([
+            "action" => "New Notice Published - " . $request->aName   
+        ]);
+        
+        // Assign notification to all employees
+        $employees = Employee::all();
+        
+        foreach ($employees as $employee) {
+            EmployeeHasNotification::create([
+                "employee_id"    => $employee->id,
+                "notification_id"=> $notification->id,
+                "type"=> "notice",
+                "is_open"        => false // default unread
+            ]);
+        }
+        
 
         return response()->json([
             "message" => "Notice has been published",
-            "notice"  => $notice
+            "notice" => $notice
         ], 201);
     }
 
@@ -59,9 +82,9 @@ class NoticeController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            "title"       => "sometimes|required|string|max:255",
-            "description" => "nullable|string",
-            "status"      => "sometimes|required|in:active,inactive"
+            "aName" => "sometimes|required|string|max:255",
+            "dis" => "nullable|string",
+            "status" => "sometimes|required|in:active,inactive"
         ]);
 
         if ($validator->fails()) {
@@ -70,11 +93,15 @@ class NoticeController extends Controller
             ], 422);
         }
 
-        $notice->update($validator->validated());
+        $notice->update([
+            "title" => $request->aName ?? $notice->title,
+            "description" => $request->dis ?? $notice->description,
+            "status" => $request->status ?? $notice->status
+        ]);
 
         return response()->json([
             "message" => "Notice has been updated",
-            "notice"  => $notice
+            "notice" => $notice
         ], 200);
     }
 
