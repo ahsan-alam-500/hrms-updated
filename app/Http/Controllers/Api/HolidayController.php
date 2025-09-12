@@ -8,23 +8,25 @@ use App\Models\leave as Leave;
 use App\Models\PersonalHoliday;
 use App\Models\holiday as Holiday;
 use App\Http\Controllers\Controller;
+use App\Models\Notification;
+use App\Models\EmployeeHasNotification;
 
 class HolidayController extends Controller
 {
     public function index()
     {
         $today = now()->toDateString();
-
+    
         // Delete past holidays
         Holiday::whereDate('date', '<', $today)->delete();
-
+    
         // Only upcoming holidays
         $public_holidays = Holiday::whereDate('date', '>=', $today)
             ->orderBy('date', 'asc')
             ->get();
-
+    
         $employees = Employee::with("personalHolidays")->get();
-
+    
         return response()->json([
             "employees" => $employees,
             "public"    => $public_holidays,
@@ -44,6 +46,20 @@ class HolidayController extends Controller
                     "name"        => $request->hName,
                     "holidays"    => $request->day,
                 ]);
+                
+                // send notification
+            $notification = Notification::create([
+            "action" => "Added New Holiday - " . $request->hName   
+            ]);
+            
+            EmployeeHasNotification::create([
+                "employee_id"    => $employeeId,
+                "notification_id"=> $notification->id,
+                "type"=> "holiday",
+                "is_open"        => false // default unread
+            ]);
+                
+                
             }
 
             return response()->json([
@@ -57,6 +73,20 @@ class HolidayController extends Controller
                 "date"        => $request->hDate,
                 "description" => $request->dis,
             ]);
+            
+            // sending notification
+            $notification = Notification::create([
+            "action" => "added a public Off day"
+             ]);
+            
+            foreach(Employee->all() as $employee){
+                EmployeeHasNotification::create([
+                    "employee_id"    => $employee->id,
+                    "notification_id"=> $notification->id,
+                    "type"=> "holiday",
+                    "is_open"        => false // default unread
+                ]);
+            }
 
             return response()->json([
                 "success" => true,

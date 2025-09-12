@@ -8,6 +8,7 @@ class PersonalHoliday extends Model
 {
     protected $table = "personal_holidays";
     protected $fillable = [
+        'name',
         'employee_id',
         'holidays',
     ];

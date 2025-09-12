@@ -22,6 +22,17 @@ class Meeting extends Model
     // Relation: Meeting created by User
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    // Employees assigned to this meeting
+    public function employees()
+    {
+        return $this->belongsToMany(
+            Employee::class,
+            'meeting_has_employees',
+            'meeting_id',
+            'employee_id'
+        );
     }
 }

@@ -35,12 +35,12 @@ class MyProjectController extends Controller
                   });
             })
             ->get();
-
+            
 
 
         // Transform
         $projects = $projects->map(function ($project) {
-
+            
             $progressMap = [
                 'To-Do'        => 0,
                 'Under Review' => 25,
@@ -49,8 +49,8 @@ class MyProjectController extends Controller
                 'Delivered'    => 100,
             ];
             $project->progress = $progressMap[$project->status] ?? 100;
-
-
+            
+            
             // --- Project Manager Avatar ---
             $projectManager = $project->projectManager;
             if ($projectManager && $projectManager->user) {
@@ -73,8 +73,8 @@ class MyProjectController extends Controller
             } else {
                 $project->team_leaders = [];
             }
-
-
+            
+            
                      // --- Taken By (array of employees) ---
           $takenByIds = $project->taken_by ?? [];
             $project->taken_by = !empty($takenByIds)
@@ -85,7 +85,7 @@ class MyProjectController extends Controller
                     })
                     ->toArray()  // optional, to get plain array of names
                 : [];
-
+            
 
             // --- Employees Avatars ---
             $project->employees = $project->assignedEmployees->map(function ($emp) {
@@ -102,19 +102,19 @@ class MyProjectController extends Controller
 
         return response()->json($projects);
     }
-
+    
     //==============================================================
     //My project group by status
     //==============================================================
-
+    
     public function myProjectsGrouped()
     {
         $employee = employee::where('user_id', Auth::id())->first();
-
+    
         if (!$employee) {
             return response()->json(['message' => 'Employee not found'], 404);
         }
-
+    
         // Auth employee কোন project এ আছে check করা
         $projects = Projects::with([
             "projectManager.user",
@@ -131,7 +131,7 @@ class MyProjectController extends Controller
               });
         })
         ->get();
-
+    
         // Initialize grouped arrays
         $grouped = [
             'To-Do'        => [],
@@ -141,9 +141,9 @@ class MyProjectController extends Controller
             'Delivered'    => [],
             'Active'       => [],
         ];
-
+    
         $projects->each(function ($project) use (&$grouped) {
-
+    
             // --- Progress calculation ---
             $progressMap = [
                 'To-Do'        => 0,
@@ -153,14 +153,14 @@ class MyProjectController extends Controller
                 'Delivered'    => 100,
             ];
             $project->progress = $progressMap[$project->status] ?? 50; // default 50 for other statuses
-
+    
             // --- Project Manager Avatar ---
             $projectManager = $project->projectManager;
             if ($projectManager && $projectManager->user) {
                 $projectManager->avatar = url("public/" . $projectManager->user->image);
             }
             $project->project_manager = $projectManager;
-
+    
             // --- Team Leaders ---
             $teamLeaderIds = $project->team_leader;
             if (is_string($teamLeaderIds)) {
@@ -177,7 +177,7 @@ class MyProjectController extends Controller
                         return $leader;
                     })
                 : [];
-
+    
             // --- Taken By (array of employee names) ---
             $takenByIds = $project->taken_by;
             if (is_string($takenByIds)) {
@@ -189,7 +189,7 @@ class MyProjectController extends Controller
                     ->map(fn($emp) => $emp->fname . " " . $emp->lname)
                     ->toArray()
                 : [];
-
+    
             // --- Assigned Employees Avatars ---
             $project->employees = $project->assignedEmployees->map(function ($emp) {
                 if ($emp->employee && $emp->employee->user) {
@@ -197,9 +197,9 @@ class MyProjectController extends Controller
                 }
                 return $emp->employee;
             });
-
+    
             unset($project->assignedEmployees);
-
+    
             // --- Group by status ---
             $status = $project->status;
             if (in_array($status, ['To-Do','Cancelled','Under Review','Completed','Delivered'])) {
@@ -208,7 +208,7 @@ class MyProjectController extends Controller
                 $grouped['Active'][] = $project;
             }
         });
-
+    
         return response()->json($grouped);
     }
 

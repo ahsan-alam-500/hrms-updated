@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\leave as Leave;
 use Illuminate\Http\Request;
+use App\Models\Notification;
+use App\Models\EmployeeHasNotification;
+use Illuminate\Support\Facades\Log;
 
 class LeaveController extends Controller
 {
@@ -81,6 +84,18 @@ class LeaveController extends Controller
             $leave = Leave::findOrFail($id);
             $leave->update($data);
             $leave->load('employee');
+
+            
+            // setting notification
+            $notification = Notification::create([
+            "action" => "Leave Request Updated - " . $request->status   
+            ]);
+            EmployeeHasNotification::create([
+                "employee_id"    => $leave->employee_id,
+                "notification_id"=> $notification->id,
+                "type"=> "leave",
+                "is_open"        => false // default unread
+            ]);
 
             return response()->json($leave);
         } catch (\Exception $e) {

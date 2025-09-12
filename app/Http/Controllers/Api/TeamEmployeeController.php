@@ -9,12 +9,8 @@ use Illuminate\Support\Facades\Validator;
 
 class TeamEmployeeController extends Controller
 {
-    /**
-     * List all team-employee assignments
-     */
     public function index()
     {
-        // Load related team and employee info
         $teamEmployees = TeamHasEmployee::with(['team', 'employee'])->get();
 
         return response()->json([
@@ -23,32 +19,29 @@ class TeamEmployeeController extends Controller
         ]);
     }
 
-    /**
-     * Assign multiple employees to a team
-     */
+
     public function store(Request $request)
     {
-        // Validate input
         $validator = Validator::make($request->all(), [
             'team_id'       => 'required|exists:project_teams,id',
             'employee_ids'  => 'required|array',
-            'employee_ids.*' => 'exists:employees,id',
+            'employee_ids.*'=> 'exists:employees,id',
         ]);
-
+    
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
                 'errors' => $validator->errors()
             ], 422);
         }
-
-        $data = [];             // To store new assignments
-        $alreadyAssigned = [];  // To track employees already in a team
-
+    
+        $data = [];
+        $alreadyAssigned = [];
+    
         foreach ($request->employee_ids as $employee_id) {
-            // Check if employee is already assigned to any team
+            // Check if employee is already assigned to a team
             $exists = TeamHasEmployee::where('employee_id', $employee_id)->exists();
-
+    
             if ($exists) {
                 $alreadyAssigned[] = $employee_id;
             } else {
@@ -58,23 +51,21 @@ class TeamEmployeeController extends Controller
                 ];
             }
         }
-
-        // Insert new assignments if any
+    
         if (!empty($data)) {
+            // Insert new assignments
             TeamHasEmployee::insert($data);
         }
-
+    
         return response()->json([
             'status' => 'success',
             'message' => 'Employees assigned action is successful',
             'assigned_count' => count($data),
-            'already_assigned' => $alreadyAssigned // IDs already assigned to another team
+            'already_assigned' => $alreadyAssigned // IDs of employees already in another team
         ], 201);
     }
 
-    /**
-     * Show a specific team-employee assignment
-     */
+
     public function show($id)
     {
         $teamEmployee = TeamHasEmployee::with(['team', 'employee'])->find($id);
@@ -92,9 +83,6 @@ class TeamEmployeeController extends Controller
         ]);
     }
 
-    /**
-     * Update a team-employee assignment
-     */
     public function update(Request $request, $id)
     {
         $teamEmployee = TeamHasEmployee::find($id);
@@ -106,7 +94,6 @@ class TeamEmployeeController extends Controller
             ], 404);
         }
 
-        // Validate only fields that are sent
         $validator = Validator::make($request->all(), [
             'team_id'     => 'sometimes|required|exists:project_teams,id',
             'employee_id' => 'sometimes|required|exists:employees,id',
@@ -119,7 +106,6 @@ class TeamEmployeeController extends Controller
             ], 422);
         }
 
-        // Update record with validated fields
         $teamEmployee->update($validator->validated());
 
         return response()->json([
@@ -129,9 +115,6 @@ class TeamEmployeeController extends Controller
         ]);
     }
 
-    /**
-     * Delete a team-employee assignment
-     */
     public function destroy($id)
     {
         $teamEmployee = TeamHasEmployee::find($id);
