@@ -27,6 +27,8 @@ use App\Http\Controllers\Api\ObjectionController;
 //----------------------------------
 use App\Http\Controllers\Api\employee\EmployeeDashboard;
 use App\Http\Controllers\Api\employee\MyProjectController;
+use App\Models\User;
+use Illuminate\Http\Request;
 //====================================
 use Illuminate\Support\Facades\Route;
 
@@ -213,7 +215,7 @@ Route::prefix('v1')->group(function () {
         return response()->json($result);
     });
 
-    Route::post('activate/{$id}', [ActivationController::class, 'activate']);
+    Route::post('activate/{id}', [ActivationController::class, 'activate']);
 
     Route::post('get/from/machine', function (Request $request) {
         $machineData = $request->all(); // The JSON you pasted
