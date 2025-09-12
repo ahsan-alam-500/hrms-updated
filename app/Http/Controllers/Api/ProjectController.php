@@ -338,7 +338,7 @@ class ProjectController extends Controller
             "Department" => "nullable|integer",
             "assign_employee" => "required|array",
             "assign_employee.*" => "exists:employees,id",
-            "distribution" => "nullable|array",
+            "distribution" => "array",
         ]);
 
         $project = Projects::findOrFail($id);
@@ -359,23 +359,40 @@ class ProjectController extends Controller
 
         $project->update($projectData);
 
-        // Sync assigned employees with distribution
         foreach ($validated["assign_employee"] as $index => $employeeId) {
             $existing = ProjectHasEmployee::where('project_id', $project->id)
                 ->where('employee_id', $employeeId)
                 ->first();
 
-            ProjectHasEmployee::updateOrCreate(
-                [
+            $oldDistribution = $existing ? (float) $existing->destribution : 0;
+            $newDistribution = isset($validated["distribution"][$index])
+                ? (float) $validated["distribution"][$index]
+                : 0;
+
+            if ($existing) {
+                if ($newDistribution !== $oldDistribution) {
+                    $existing->update(['destribution' => $newDistribution]);
+
+                    $notification = Notification::create([
+                        "action" => "Distribution updated for - " . $project->name,
+                    ]);
+
+                    EmployeeHasNotification::create([
+                        "employee_id" => $employeeId,
+                        "notification_id" => $notification->id,
+                        "type" => "project",
+                        "is_open" => false
+                    ]);
+                }
+            } else {
+                ProjectHasEmployee::create([
                     'project_id' => $project->id,
-                    'employee_id' => $employeeId
-                ],
-                [
-                    'distribution' => $validated["distribution"][$index]
-                        ?? ($existing->distribution ?? 0)
-                ]
-            );
+                    'employee_id' => $employeeId,
+                    'destribution' => $newDistribution
+                ]);
+            }
         }
+
 
         return response()->json([
             "message" => "Project updated successfully",
